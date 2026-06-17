@@ -27,10 +27,11 @@ afterAll(async () => {
 const api = (path: string) => fetch(server.url + path).then((r) => r.json());
 
 describe('serveCaius (integration)', () => {
-  it('serves the GUI shell at /', async () => {
-    const html = await fetch(server.url + '/').then((r) => r.text());
-    expect(html).toContain('<title>Caius</title>');
-    expect(html).toContain('data-testid="funnel"');
+  it('serves an HTML page at / (build fallback when dist is absent)', async () => {
+    const res = await fetch(server.url + '/');
+    expect(res.headers.get('content-type')).toContain('text/html');
+    const html = await res.text();
+    expect(html).toContain('Caius');
   });
 
   it('GET /api/summary reports the index', async () => {
@@ -40,11 +41,17 @@ describe('serveCaius (integration)', () => {
     expect(s.report.liveCount).toBe(3); // 2 in the project note + 1 overdue daily task
   });
 
+  it('GET /api/summary includes capacityMinutes', async () => {
+    const s = await api('/api/summary');
+    expect(s.capacityMinutes).toBe(480);
+  });
+
   it('GET /api/funnel returns live lanes + a now lane', async () => {
     const f = await api('/api/funnel');
     expect(f.now.map((t: { text: string }) => t.text)).toEqual(['Working on it']);
     const overdue = f.lanes.find((l: { horizon: string }) => l.horizon === 'overdue');
     expect(overdue.count).toBe(1);
+    expect(typeof f.byGrain).toBe('object');
   });
 
   it('GET /api/explain returns provenance by rowid', async () => {

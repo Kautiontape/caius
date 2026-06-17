@@ -59,38 +59,6 @@ export function filterTasks(result: ScanResult, f: TaskFilter): IndexedTask[] {
   });
 }
 
-export interface DayPlanGroup {
-  project: string | null;
-  tasks: IndexedTask[];
-}
-export interface DayPlan {
-  date: string;
-  tasks: IndexedTask[];
-  byProject: DayPlanGroup[];
-  estimatedMinutes: number;
-  capacityMinutes: number;
-  unestimated: IndexedTask[];
-}
-
-function isoDate(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-/** Today's live tasks (horizon `today` + anything in_progress + due today). */
-export function dayPlan(result: ScanResult, now: Date, capacityMinutes: number): DayPlan {
-  const date = isoDate(now);
-  const tasks = result.tasks.filter(
-    (t) => t.live && (t.horizon === 'today' || t.state === 'in_progress' || t.due === date),
-  );
-  const groups = new Map<string | null, IndexedTask[]>();
-  for (const t of tasks) (groups.get(t.project) ?? groups.set(t.project, []).get(t.project)!).push(t);
-  const byProject = [...groups.entries()].map(([project, ts]) => ({ project, tasks: ts }));
-  const estimatedMinutes = tasks.reduce((sum, t) => sum + (t.estMinutes ?? 0), 0);
-  const unestimated = tasks.filter((t) => t.estMinutes === null);
-  return { date, tasks, byProject, estimatedMinutes, capacityMinutes, unestimated };
-}
-
 export interface ReviewSplit {
   grain: string;
   done: IndexedTask[];

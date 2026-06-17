@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { IndexedTask, ScanResult } from '@caius/index';
-import { funnel, filterTasks, dayPlan, reviewSplit, explain, flagsSummary } from '../src/query.js';
+import { funnel, filterTasks, reviewSplit, explain, flagsSummary } from '../src/query.js';
 
 let rowid = 0;
 function mk(p: Partial<IndexedTask>): IndexedTask {
@@ -44,8 +44,6 @@ const result: ScanResult = {
   report: {} as ScanResult['report'],
 };
 
-const now = new Date(2026, 5, 17);
-
 describe('funnel', () => {
   it('counts LIVE tasks per horizon, terminal tasks excluded', () => {
     const f = funnel(result);
@@ -74,17 +72,6 @@ describe('filterTasks', () => {
   it('filters by project and state', () => {
     expect(filterTasks(result, { project: 'A' }).map((t) => t.text).sort()).toEqual(['t1', 't2']);
     expect(filterTasks(result, { state: 'in_progress' }).map((t) => t.text)).toEqual(['t2']);
-  });
-});
-
-describe('dayPlan', () => {
-  it("collects today's live tasks plus in_progress, grouped by project, with capacity", () => {
-    const plan = dayPlan(result, now, 480);
-    expect(plan.tasks.map((t) => t.text).sort()).toEqual(['t2', 't4']);
-    expect(plan.estimatedMinutes).toBe(60); // t4=60, t2 unestimated
-    expect(plan.capacityMinutes).toBe(480);
-    expect(plan.unestimated.map((t) => t.text)).toEqual(['t2']);
-    expect(plan.byProject.map((g) => g.project).sort()).toEqual(['A', 'B']);
   });
 });
 
