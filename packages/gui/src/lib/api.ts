@@ -1,0 +1,80 @@
+import type { Grain } from './grains';
+
+/** The subset of the engine's IndexedTask the GUI reads off the wire. */
+export interface ApiTask {
+  rowid: number;
+  blockId: string | null;
+  file: string;
+  line: number;
+  text: string;
+  project: string | null;
+  grain: Grain | null;
+  bucket: 'past' | 'this' | 'next' | 'future' | null;
+  estMinutes: number | null;
+  importance: number;
+  state: string;
+  live: boolean;
+}
+
+export interface UiTask {
+  id: string;            // (file,line) surrogate — temporary; becomes ^id at Phase-2 commit
+  file: string;
+  line: number;
+  text: string;
+  project: string | null;
+  grain: Grain | null;
+  bucket: ApiTask['bucket'];
+  slot: 'today' | 'tomorrow' | null;
+  estMinutes: number | null;
+  importance: number;
+  inProgress: boolean;
+  done: boolean;
+}
+
+export const surrogateId = (file: string, line: number) => `${file}\n${line}`;
+
+export function toUiTask(t: ApiTask): UiTask {
+  const slot: UiTask['slot'] =
+    t.grain === 'day' ? (t.bucket === 'this' ? 'today' : t.bucket === 'next' ? 'tomorrow' : null) : null;
+  return {
+    id: surrogateId(t.file, t.line),
+    file: t.file,
+    line: t.line,
+    text: t.text,
+    project: t.project,
+    grain: t.grain,
+    bucket: t.bucket,
+    slot,
+    estMinutes: t.estMinutes,
+    importance: t.importance,
+    inProgress: t.state === 'in_progress',
+    done: t.state === 'done' || t.state === 'cancelled',
+  };
+}
+
+const getJson = <T>(u: string): Promise<T> => fetch(u).then((r) => r.json() as Promise<T>);
+
+export async function fetchTasksAtGrain(grain: Grain): Promise<UiTask[]> {
+  const tasks = await getJson<ApiTask[]>(`/api/tasks?grain=${grain}&live=true`);
+  return tasks.map(toUiTask);
+}
+
+export async function fetchOverdue(): Promise<UiTask[]> {
+  const tasks = await getJson<ApiTask[]>(`/api/tasks?live=true`);
+  return tasks.filter((t) => t.bucket === 'past').map(toUiTask);
+}
+
+export async function fetchReview(grain: Grain): Promise<{ done: UiTask[]; open: UiTask[] }> {
+  const r = await getJson<{ done: ApiTask[]; open: ApiTask[] }>(`/api/review/${grain}`);
+  return { done: r.done.map(toUiTask), open: r.open.map(toUiTask) };
+}
+
+export interface FunnelData { byGrain: Record<string, number>; now: ApiTask[]; }
+export const fetchFunnel = () => getJson<FunnelData>('/api/funnel');
+
+export interface SummaryData {
+  vault: string;
+  capacityMinutes: number;
+  report: { fileCount: number; taskCount: number; liveCount: number };
+}
+export const fetchSummary = () => getJson<SummaryData>('/api/summary');
