@@ -40,6 +40,21 @@ across 650 files). Findings and resolutions:
 | D8 | Funnel must follow Marvin; Monthly is one step up; current vs future month differ; past tasks must resurface; Inbox isn't a funnel stage. | **Date-relative horizon.** Periodic notes are classified by the date in their filename vs *now*: current→its level, future→one level broader, past→**`overdue`** lane. Levels: `overdue → today → week → orbit → planning_ahead → someday`; `now` = `[/]` view. **`01 - Inbox` excluded** from indexing. |
 | D9 | Workday length is personal. | **`capacity.workday_minutes` is user-configured**; no baked-in default assumed. |
 
+### Phase-0 empirical findings (M1 corpus smoke over the real-vault clone)
+Parsing all 2,622 notes / **5,574 tasks** with zero crashes:
+- **No task carries a `^id`** (0 of 5,574). The 2,060 `^id` anchors in the vault
+  are all on **non-task** blocks (link targets like `… ^tv5bZRxB`). ⇒ D5
+  reconciliation is dormant until Caius mints task ids (Phase 2); those existing
+  anchors are a **collision hazard** for future id generation (must avoid reuse).
+- **Tokens are almost unused today**: 19 estimates, everything else 0 (`from:`/
+  `moved:`/`:[[`/`*`/`done:`/trailing-`!` are net-new). The vault is overwhelmingly
+  **bare checkboxes** — confirming the "bare `- [ ]` is always valid" core is the
+  right bet, and that **horizon-by-location is the highest-value axis** for the
+  current vault (most metadata will be derived, not typed).
+- Structure is real: 1,011 subtasks, 305 tasks with attached notes — the nesting
+  parser earns its keep. States: done 3445 · open 1182 · cancelled 767 ·
+  tombstone 146 · in_progress 34.
+
 ---
 
 ## 2. Architecture
