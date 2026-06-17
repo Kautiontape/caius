@@ -64,3 +64,37 @@ describe('resolveHorizon — provenance', () => {
     expect(d.source).toContain('2026-06');
   });
 });
+
+describe('resolveHorizon — grain + bucket', () => {
+  it('Daily current → day/this (horizon still today)', () => {
+    const d = h('02 - Periodic/Daily/2026/06/2026-06-17.md');
+    expect([d.value, d.grain, d.bucket]).toEqual(['today', 'day', 'this']);
+  });
+  it('Daily next-day → day/next (horizon still week)', () => {
+    const d = h('02 - Periodic/Daily/2026/06/2026-06-18.md');
+    expect([d.value, d.grain, d.bucket]).toEqual(['week', 'day', 'next']);
+  });
+  it('Daily far-future → day/future', () => {
+    expect(h('02 - Periodic/Daily/2026/06/2026-06-20.md').bucket).toBe('future');
+  });
+  it('Daily past → day/past', () => {
+    const d = h('02 - Periodic/Daily/2026/06/2026-06-10.md');
+    expect([d.value, d.grain, d.bucket]).toEqual(['overdue', 'day', 'past']);
+  });
+  it('Weekly current → week/this', () => {
+    const d = h('02 - Periodic/Weekly/2026/2026-W25.md');
+    expect([d.grain, d.bucket]).toEqual(['week', 'this']);
+  });
+  it('Monthly next → month/next (horizon planning_ahead)', () => {
+    const d = h('02 - Periodic/Monthly/2026/2026-07.md');
+    expect([d.value, d.grain, d.bucket]).toEqual(['planning_ahead', 'month', 'next']);
+  });
+  it('Project note → someday/null', () => {
+    const d = h('10 - Project/Caius/notes.md');
+    expect([d.grain, d.bucket]).toEqual(['someday', null]);
+  });
+  it('default (unparseable periodic) → someday/null', () => {
+    const d = h('02 - Periodic/Daily/scratchpad.md');
+    expect([d.grain, d.bucket]).toEqual(['someday', null]);
+  });
+});
