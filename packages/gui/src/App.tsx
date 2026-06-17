@@ -44,8 +44,8 @@ export function App() {
     if (posture === 'review' && ritual.grain) void fetchReview(ritual.grain).then(setReview);
   }, [posture, ritual.grain]);
 
-  const onStage = (c: PendingChange) => dispatch({ type: 'stage', change: c });
-  const onUnstage = (taskId: string) => dispatch({ type: 'unstage', taskId });
+  const onStage = (c: PendingChange) => { dispatch({ type: 'stage', change: c }); setConflicts([]); };
+  const onUnstage = (taskId: string) => { dispatch({ type: 'unstage', taskId }); setConflicts([]); };
 
   const onCommit = async () => {
     const res = await commit(buffer);

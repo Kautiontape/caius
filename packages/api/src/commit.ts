@@ -17,8 +17,9 @@ export interface CommitResult {
 
 /**
  * Phase-1 commit reconciliation: a diff of the staged intents against a FRESH
- * scan (not a replay). Match by ^id when present, else by the (file,line)
- * surrogate, then compare the staged snapshot. Phase 2 reuses this, then writes.
+ * scan (not a replay). Matches each change by its (file,line) surrogate +
+ * snapshot text. (Phase 2 will prefer a minted ^id match, then fall back to the
+ * surrogate.) Phase 1 returns the diff and writes nothing.
  */
 export function reconcileCommit(fresh: ScanResult, changes: CommitChange[]): CommitResult {
   const applied: CommitChange[] = [];
