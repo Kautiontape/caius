@@ -19,6 +19,7 @@ if (parsed.command === 'scan') {
   const server = await serveCaius({ root: resolve(parsed.vault), port: parsed.port });
   console.log(`Caius serving ${parsed.vault}`);
   console.log(`  → ${server.url}  (watching for changes; Ctrl-C to stop)`);
+  console.log('  (build the GUI with `pnpm build`; for live UI dev use `pnpm dev:gui`)');
   const shutdown = () => {
     void server.close().then(() => process.exit(0));
   };
