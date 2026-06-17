@@ -5,7 +5,7 @@
 import { readFileSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { parseDocument, type ParsedTask, type State } from '@caius/core';
-import { resolveHorizon, resolveProject, type Config, type ProjectContext } from '@caius/resolve';
+import { resolveHorizon, resolveProject, type Config, type ProjectContext, type Grain, type Bucket } from '@caius/resolve';
 import { walkVault } from './walk.js';
 
 export interface IndexedTask {
@@ -22,6 +22,8 @@ export interface IndexedTask {
   done: string | null;
   project: string | null;
   horizon: string | null;
+  grain: Grain | null;
+  bucket: Bucket | null;
   area: string | null; // deferred (D3) — always null in Phase 1
   parentRowid: number | null;
   tokens: { kind: string; raw: string }[];
@@ -124,6 +126,8 @@ export function scanVault(root: string, config: Config, now: Date = new Date()):
         done: done ? (tokenValue(done, 'date') as string) : null,
         project: null,
         horizon: null,
+        grain: null,
+        bucket: null,
         area: null,
         parentRowid: null, // filled below
         tokens: pt.tokens.map((t) => ({ kind: t.kind, raw: t.raw })),
@@ -141,9 +145,12 @@ export function scanVault(root: string, config: Config, now: Date = new Date()):
     const horizon = resolveHorizon(t.file, now, config);
     const project = resolveProject(pt, t.file, config, ctx);
     t.horizon = horizon.value;
+    t.grain = horizon.grain;
+    t.bucket = horizon.bucket;
     t.project = project.value;
     t.derivations.push(
       { axis: 'horizon', value: horizon.value, rule: horizon.rule, source: horizon.source },
+      { axis: 'grain', value: horizon.grain, rule: `grain ${horizon.grain ?? 'none'} · bucket ${horizon.bucket ?? 'n/a'}`, source: horizon.source },
       { axis: 'project', value: project.value, rule: project.rule, source: project.source },
     );
     if (project.value) projectByNote.set(basename(t.file), project.value);

@@ -33,7 +33,7 @@ describe('writeIndex → SQLite', () => {
     expect(count('SELECT COUNT(*) n FROM files')).toBe(2);
     expect(count('SELECT COUNT(*) n FROM tasks')).toBe(3);
     expect(count("SELECT COUNT(*) n FROM tokens WHERE kind='estimate'")).toBe(1);
-    expect(count('SELECT COUNT(*) n FROM derivations')).toBe(6); // 2 axes × 3 tasks
+    expect(count('SELECT COUNT(*) n FROM derivations')).toBe(9); // 3 axes × 3 tasks
 
     const today = db
       .prepare("SELECT horizon, project, est_minutes, importance FROM tasks WHERE text='Build'")
