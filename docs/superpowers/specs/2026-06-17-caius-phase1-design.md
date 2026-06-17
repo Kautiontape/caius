@@ -32,11 +32,13 @@ across 650 files). Findings and resolutions:
 |---|---------|----------|
 | D1 | Vault actively uses `[!]`×99, `[?]`×90, `[*]`×66 + long tail — beyond the spec's 5 states. | **Strict 5 states** (`[ ] [/] [x] [-] [>]`). Any other glyph line is **not a task** — not indexed, not flagged. |
 | D2 | 151 `[>]` lines are Tasks-plugin "forwarded" markers with **no** `moved:` pointer. | **Tolerate as legacy.** Pointerless `[>]` = non-Caius forward: terminal, non-live, **not flagged**. Only flag a `[>]` whose `moved:` pointer is present-but-broken. |
-| D3 | Spec's `area` axis = work/personal; vault `20 - Area/` = PARA topics (different concept). | **Area is tag-driven only.** No path inference, no default. Area present iff a configured tag is on the task; absent otherwise. |
+| D3 | Tags/area "not essential" for this build; area will likely derive from files later. | **Area deferred.** No `area` axis shipped in Phase 1; day-plan is not grouped by area yet. |
 | D4 | Vault uses numbered folders, not `Daily/`, `Projects/`, `Areas/`. | Rewrite all config globs for the real layout (§7). |
 | D5 | `^id` is used 2,060× as block-ref anchors. Obsidian block ids are **note-scoped**, but Caius treats `^id` as **vault-global** identity. | Global reconciliation, but duplicate-live-`^id` is **informational** (surface both, never auto-pick); explain output shows the collision so the user judges. Caius-generated ids must be vault-unique (Phase 2 concern). |
 | D6 | `:[[` override sigil appears only 2× vault-wide, both in non-task contexts. `moved:`/`from:`/`&` unused. | Grammar is effectively collision-free in this vault. Right-to-left trailing-token scan confirmed mandatory. |
 | D7 | Tech stack / scope / GUI / parser. | **Full Phase 1**, **TypeScript/Node monorepo**, **hand-written line scanner**, **local web app**. Test against a **git clone of the real vault** in a gitignored dir. |
+| D8 | Funnel must follow Marvin; Monthly is one step up; current vs future month differ; past tasks must resurface; Inbox isn't a funnel stage. | **Date-relative horizon.** Periodic notes are classified by the date in their filename vs *now*: current→its level, future→one level broader, past→**`overdue`** lane. Levels: `overdue → today → week → orbit → planning_ahead → someday`; `now` = `[/]` view. **`01 - Inbox` excluded** from indexing. |
+| D9 | Workday length is personal. | **`capacity.workday_minutes` is user-configured**; no baked-in default assumed. |
 
 ---
 
@@ -146,11 +148,10 @@ Notes:
   by whether the target file is in `roles.templates` (§7). In Phase 1 no file is
   a template, so all `from:` are treated as move-backrefs.
 
-### 3.5 Tags (area source, D3)
-Inline `#tag` tokens anywhere on the task line are collected. Area resolves from
-the **first** tag matching a configured `area_mapping.tags` entry; else area is
-absent. (Phase 1 reads inline tags on the task line only; frontmatter/note-level
-tag inheritance is deferred.)
+### 3.5 Tags (D3 — area deferred)
+Inline `#tag` tokens anywhere on the task line are still **collected** into
+`Task.tags` (cheap, useful later), but **no `area` axis is derived from them in
+Phase 1**. Area resolution is deferred entirely (likely file-derived later).
 
 ### 3.6 Nesting — subtask vs note
 The parse unit is a **task block**: the task line plus all lines indented under
@@ -210,8 +211,8 @@ for explainability, not optional.
 
 ## 5. Resolution engine (`resolve`)
 
-Three independent axes, each a precedence chain; **explicit beats inferred**;
-every result records the rule that produced it.
+Two shipped axes (project, horizon); **explicit beats inferred**; every result
+records the rule that produced it. **Area is deferred** (D3) — not resolved.
 
 **Project**
 ```
@@ -220,14 +221,23 @@ every result records the rule that produced it.
   → else path-inferred via project_mapping
   → else null  (orphan — first-class, not an error)
 ```
-**Horizon** = where the **live** line physically is, mapped via `horizon_mapping`
-(first match wins) → else `default`.
 
-**Area** (D3, tag-driven)
+**Horizon (date-relative, D8).** First matching `horizon_mapping` rule wins.
+A static rule maps a folder straight to a level (Projects/Areas → `someday`).
+A **periodic** rule carries a `date` format; the resolver parses the period out
+of the note's filename, compares it to *now* at that granularity, and picks:
+
 ```
-first task tag matching area_mapping.tags
-  → else null   (no path inference, no default)
+period vs now    Daily          Weekly         Monthly
+  current     →  today          week           orbit
+  future      →  week           orbit          planning_ahead   (one level broader)
+  past        →  overdue        overdue        overdue
 ```
+`now` is not a stored horizon — it is a derived view = live tasks in state
+`in_progress` (`[/]`), surfaced regardless of location. Funnel display order:
+`overdue · today · week · orbit · planning_ahead · someday` (+ a `now` lane).
+Every horizon records provenance, e.g. *"orbit (Monthly rule, current month
+2026-06)"*.
 
 ---
 
@@ -281,32 +291,46 @@ tasks).
 indent:
   tab_width: 4
 
-horizon_mapping:                # first match wins
-  - { match: "02 - Periodic/Daily/**/*.md",   horizon: today }
-  - { match: "02 - Periodic/Weekly/**/*.md",  horizon: week }
-  - { match: "02 - Periodic/Monthly/**/*.md", horizon: month }   # added level
-  - { match: "01 - Inbox/**/*.md",            horizon: inbox }
-  - { match: "10 - Project/**/*.md",          horizon: someday }
-  - { match: "20 - Area/**/*.md",             horizon: someday }
+capacity:
+  workday_minutes: 480           # user-configurable; day-plan realism check (D9)
+
+horizon_mapping:                 # first match wins
+  # periodic rules: classify by the date in the filename vs *now* (D8)
+  - match: "02 - Periodic/Daily/**/*.md"
+    date: "YYYY-MM-DD"           # parsed from leaf filename; compared per-day
+    by_date: { current: today, future: week,           past: overdue }
+  - match: "02 - Periodic/Weekly/**/*.md"
+    date: "GGGG-[W]WW"           # compared per-ISO-week
+    by_date: { current: week,  future: orbit,          past: overdue }
+  - match: "02 - Periodic/Monthly/**/*.md"
+    date: "YYYY-MM"              # compared per-month
+    by_date: { current: orbit, future: planning_ahead, past: overdue }
+  # static rules
+  - { match: "10 - Project/**/*.md", horizon: someday }
+  - { match: "20 - Area/**/*.md",    horizon: someday }
   default: someday
 
 project_mapping:
   - { match: "10 - Project/*/**/*.md", project: "{seg1}" }  # 1st seg after prefix
   - { match: "10 - Project/*.md",      project: "{filename}" }
 
-area_mapping:                   # tag-driven only (D3)
-  tags: { "#work": work, "#personal": personal }   # absent if no tag
+# area_mapping: deferred (D3) — no area axis in Phase 1
 
-targets:                        # Phase 2 (move destinations); defined now
+targets:                         # Phase 2 (move destinations); defined now
   today: "02 - Periodic/Daily/{date:YYYY}/{date:MM}/{date:YYYY-MM-DD}.md"
   week:  "02 - Periodic/Weekly/{date:YYYY}/{date:GGGG-[W]WW}.md"
 
 roles:
-  templates: []                                  # recurrence is Phase 2
+  templates: []                  # recurrence is Phase 2
   excluded:
+    - "01 - Inbox/**"            # capture zone — skipped from indexing (D8)
+    - "30 - Resources/**"
     - "80 - Archive/**"
-    - "99 - Templates/**"
+    - "90 - Maintenance/**"
+    - "91 - Testing/**"
     - "95 - System/**"
+    - "99 - Scripts/**"
+    - "99 - Templates/**"
     - ".obsidian/**"
     - ".trash/**"
 ```
@@ -315,13 +339,17 @@ roles:
 any depth; case-sensitive; first match wins. **Capture tokens:** `{seg1}` = first
 path segment after the matched literal prefix; `{filename}` = leaf without `.md`;
 `{folder}` = immediate parent dir name; `{date:…}` uses date-fns tokens (incl.
-ISO `GGGG`/`WW`). Config is **non-destructive**: changing it re-derives on next
-scan; Markdown lines and `^id` never change.
+ISO `GGGG`/`WW`). A periodic rule's `date` is matched against the note's leaf
+filename to recover the period, then compared to *now* at that rule's granularity
+(day / ISO-week / month) to pick `current`/`future`/`past`. Config is
+**non-destructive**: changing it re-derives on next scan; Markdown lines and
+`^id` never change.
 
 ### Funnel order
-`inbox → someday → month → week → today → now ([/])`. `month` and `inbox` are
-additions to the spec's funnel to cover the vault's Monthly periodics and Inbox.
-(Confirm during review.)
+`overdue → today → week → orbit → planning_ahead → someday`, with a cross-cutting
+`now` lane = live `[/]` in-progress tasks (any location). `orbit`/`planning_ahead`
+are the Marvin "this month / planning ahead" levels; `overdue` collects live
+tasks stranded in any past periodic note; `01 - Inbox` is excluded entirely.
 
 ---
 
@@ -332,20 +360,22 @@ re-run **global reconciliation** (cheap: a grouped query over `block_id`).
 Debounced to coalesce editor save bursts.
 
 ## 9. API (`api`, read-only)
-- `GET /tasks?horizon=&project=&area=&live=&state=` — filtered list.
-- `GET /funnel` — counts per horizon (+ `now` = in_progress).
-- `GET /day-plan?date=YYYY-MM-DD` — that day's live tasks, grouped by area tag,
-  with capacity: `sum(est_minutes)` vs `capacity.available_minutes`; unestimated
-  tasks listed for an estimate prompt.
-- `GET /explain/:blockId` — provenance for horizon/project/area + importance.
+- `GET /tasks?horizon=&project=&live=&state=` — filtered list.
+- `GET /funnel` — counts per horizon (`overdue…someday`) + the `now` lane.
+- `GET /day-plan?date=YYYY-MM-DD` — that day's live tasks (grouped by project,
+  area deferred), with capacity: `sum(est_minutes)` vs `capacity.workday_minutes`;
+  unestimated tasks listed for an estimate prompt.
+- `GET /explain/:blockId` — provenance for horizon/project + importance.
 - `GET /flags` — integrity issues, grouped by kind/severity.
 
 ## 10. GUI (`gui`, local web app)
 `caius serve` → `http://localhost:7777`. Read-only (editing stays in Obsidian).
-- **Funnel** column view (inbox…now) with counts.
-- **Day-plan**: today's live tasks grouped by area tag; **capacity bar**
-  (estimated vs available); source label via `from:`; unestimated → prompt chip.
-- **Explain** panel: click a task → why this horizon/project/area.
+- **Funnel** column view with counts: `now`, `overdue`, `today`, `week`,
+  `orbit`, `planning_ahead`, `someday`. The `overdue` lane is visually marked.
+- **Day-plan**: today's live tasks (grouped by project for now; area deferred);
+  **capacity bar** (estimated vs `workday_minutes`); source label via `from:`;
+  unestimated → prompt chip.
+- **Explain** panel: click a task → why this horizon/project.
 - **Flags** panel: integrity issues.
 
 ---
@@ -368,13 +398,14 @@ Debounced to coalesce editor save bursts.
 - **No write-back of any kind** — no promote/move/tombstone, no roll-forward, no
   recurrence expansion, no parent-completion cascade. All **Phase 2**.
 - **No Obsidian plugin** — Phase 2 (will import `core`).
+- **No `area` axis** (D3) — tags are still collected, but area is unresolved and
+  the day-plan is grouped by project for now.
 - `&` recurrence tokens are parsed but inert.
-- Frontmatter/note-level tag inheritance for area — deferred.
 - `~1.5h` fractional estimates — unsupported for now.
 
 ### Open items to confirm in review
-1. `month` and `inbox` as funnel levels (vs folding Monthly/Inbox into someday).
-2. Area-tag vocabulary (`#work`/`#personal` or others) — defaults to empty until set.
-3. Capacity `available_minutes` default (e.g. 6h work day).
-4. Whether `30 - Resources`, `90 - Maintenance`, `91 - Testing`, `99 - Scripts`
-   should be excluded or indexed as `someday` (currently: indexed via `default`).
+1. **Future near-term notes:** the explicit rule is future-Monthly → `planning_ahead`.
+   I generalized future-Daily → `week` and future-Weekly → `orbit` ("one level
+   broader"). Confirm, or should future Daily/Weekly behave differently (rare case).
+2. **`now` lane:** treated as a derived view over `[/]` in-progress tasks rather
+   than a stored horizon. Confirm that's the intended Marvin "now".
