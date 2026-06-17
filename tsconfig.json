@@ -4,6 +4,8 @@
     { "path": "packages/core" },
     { "path": "packages/resolve" },
     { "path": "packages/index" },
+    { "path": "packages/watch" },
+    { "path": "packages/api" },
     { "path": "packages/cli" }
   ]
 }
