@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useState } from 'react';
 import { type Altitude, type Posture, RITUALS } from './lib/grains';
 import {
-  fetchFunnel, fetchSummary, fetchOverdue, fetchTasksAtGrain,
+  fetchFunnel, fetchSummary, fetchOverdue, fetchTasksAtGrain, fetchReview,
   type FunnelData, type SummaryData, type UiTask,
 } from './lib/api';
 import { stagingReducer, commit, type PendingChange, type CommitResult } from './lib/staging';
@@ -10,6 +10,8 @@ import { PipelineStrip } from './components/PipelineStrip';
 import { PlanView } from './components/PlanView';
 import { DayPlanView } from './components/DayPlanView';
 import { PendingTray } from './components/PendingTray';
+import { ReviewView } from './components/ReviewView';
+import { RitualSummary } from './components/RitualSummary';
 
 export function App() {
   const [altitude, setAltitude] = useState<Altitude>('day');
@@ -20,6 +22,7 @@ export function App() {
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [overdue, setOverdue] = useState<UiTask[]>([]);
   const [source, setSource] = useState<UiTask[]>([]);
+  const [review, setReview] = useState<{ done: UiTask[]; open: UiTask[] }>({ done: [], open: [] });
 
   const [buffer, dispatch] = useReducer(stagingReducer, {});
   const [conflicts, setConflicts] = useState<CommitResult['conflicts']>([]);
@@ -35,6 +38,10 @@ export function App() {
   useEffect(() => {
     if (posture === 'plan' && ritual.from) void fetchTasksAtGrain(ritual.from).then(setSource);
   }, [posture, ritual.from]);
+
+  useEffect(() => {
+    if (posture === 'review' && ritual.grain) void fetchReview(ritual.grain).then(setReview);
+  }, [posture, ritual.grain]);
 
   const onStage = (c: PendingChange) => dispatch({ type: 'stage', change: c });
   const onUnstage = (taskId: string) => dispatch({ type: 'unstage', taskId });
@@ -101,7 +108,22 @@ export function App() {
             />
           )}
           {posture === 'review' && (
-            <div className="text-dim" data-testid="review-placeholder">Review lands in Milestone 3.</div>
+            <div className="flex flex-col gap-4">
+              <RitualSummary
+                altitude={altitude}
+                doneCount={review.done.length}
+                openCount={review.open.length}
+                stagedCount={Object.keys(buffer).length}
+              />
+              <ReviewView
+                altitude={altitude}
+                done={review.done}
+                open={review.open}
+                pending={buffer}
+                onStage={onStage}
+                onUnstage={onUnstage}
+              />
+            </div>
           )}
         </div>
 
