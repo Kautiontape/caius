@@ -36,8 +36,9 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (posture === 'plan' && ritual.from) void fetchTasksAtGrain(ritual.from).then(setSource);
-  }, [posture, ritual.from]);
+    if (posture === 'plan' && ritual.from)
+      void fetchTasksAtGrain(ritual.from, altitude === 'day' ? 'this' : undefined).then(setSource);
+  }, [posture, ritual.from, altitude]);
 
   useEffect(() => {
     if (posture === 'review' && ritual.grain) void fetchReview(ritual.grain).then(setReview);

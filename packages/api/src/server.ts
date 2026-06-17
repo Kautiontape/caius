@@ -115,6 +115,7 @@ export function serveCaius(opts: ServeOptions): Promise<Server> {
         filterTasks(result, {
           horizon: q.get('horizon') ?? undefined,
           grain: q.get('grain') ?? undefined,
+          bucket: q.get('bucket') ?? undefined,
           project: q.get('project') ?? undefined,
           state: (q.get('state') as State | null) ?? undefined,
           live: q.has('live') ? q.get('live') === 'true' : undefined,
@@ -123,7 +124,8 @@ export function serveCaius(opts: ServeOptions): Promise<Server> {
     }
     if (p.startsWith('/api/review/')) {
       const grain = decodeURIComponent(p.slice('/api/review/'.length));
-      return json(res, reviewSplit(result, grain));
+      const period = q.get('period') ?? 'this';
+      return json(res, reviewSplit(result, grain, period));
     }
     if (p === '/api/explain') {
       const rowid = q.get('rowid');

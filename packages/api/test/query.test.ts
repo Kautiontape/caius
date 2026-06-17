@@ -116,13 +116,34 @@ describe('funnel — byGrain', () => {
 });
 
 describe('reviewSplit', () => {
-  it('splits a grain into done and open', () => {
-    const a = mk({ text: 'd1', grain: 'day', live: false, state: 'done' });
-    const b = mk({ text: 'o1', grain: 'day', live: true, state: 'open' });
-    const c = mk({ text: 'other', grain: 'week', live: true });
-    const r: ScanResult = { ...result, tasks: [a, b, c] };
+  it('splits a grain into done and open, scoped to the current bucket by default', () => {
+    const a = mk({ text: 'd1', grain: 'day', live: false, state: 'done', bucket: 'this' });
+    const b = mk({ text: 'o1', grain: 'day', live: true, state: 'open', bucket: 'this' });
+    const c = mk({ text: 'other', grain: 'week', live: true, bucket: 'this' });
+    const d = mk({ text: 'past-open', grain: 'day', live: true, state: 'open', bucket: 'past' });
+    const r: ScanResult = { ...result, tasks: [a, b, c, d] };
     const split = reviewSplit(r, 'day');
     expect(split.done.map((t) => t.text)).toEqual(['d1']);
     expect(split.open.map((t) => t.text)).toEqual(['o1']);
+    // past-open must be excluded from the default 'this' split
+    expect(split.open.map((t) => t.text)).not.toContain('past-open');
+  });
+  it('returns past-bucket tasks when explicitly requested', () => {
+    const a = mk({ text: 'd1', grain: 'day', live: false, state: 'done', bucket: 'this' });
+    const b = mk({ text: 'o1', grain: 'day', live: true, state: 'open', bucket: 'this' });
+    const d = mk({ text: 'past-open', grain: 'day', live: true, state: 'open', bucket: 'past' });
+    const r: ScanResult = { ...result, tasks: [a, b, d] };
+    const split = reviewSplit(r, 'day', 'past');
+    expect(split.open.map((t) => t.text)).toEqual(['past-open']);
+    expect(split.done).toHaveLength(0);
+  });
+});
+
+describe('filterTasks — bucket', () => {
+  it('filters by bucket', () => {
+    const a = mk({ text: 'w-this', grain: 'week', bucket: 'this' });
+    const b = mk({ text: 'w-next', grain: 'week', bucket: 'next' });
+    const r: ScanResult = { ...result, tasks: [a, b] };
+    expect(filterTasks(r, { bucket: 'next' }).map((t) => t.text)).toEqual(['w-next']);
   });
 });

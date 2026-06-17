@@ -54,8 +54,9 @@ export function toUiTask(t: ApiTask): UiTask {
 
 const getJson = <T>(u: string): Promise<T> => fetch(u).then((r) => r.json() as Promise<T>);
 
-export async function fetchTasksAtGrain(grain: Grain): Promise<UiTask[]> {
-  const tasks = await getJson<ApiTask[]>(`/api/tasks?grain=${grain}&live=true`);
+export async function fetchTasksAtGrain(grain: Grain, bucket?: string): Promise<UiTask[]> {
+  const bucketParam = bucket !== undefined ? `&bucket=${bucket}` : '';
+  const tasks = await getJson<ApiTask[]>(`/api/tasks?grain=${grain}&live=true${bucketParam}`);
   return tasks.map(toUiTask);
 }
 
@@ -64,8 +65,8 @@ export async function fetchOverdue(): Promise<UiTask[]> {
   return tasks.filter((t) => t.bucket === 'past').map(toUiTask);
 }
 
-export async function fetchReview(grain: Grain): Promise<{ done: UiTask[]; open: UiTask[] }> {
-  const r = await getJson<{ done: ApiTask[]; open: ApiTask[] }>(`/api/review/${grain}`);
+export async function fetchReview(grain: Grain, period = 'this'): Promise<{ done: UiTask[]; open: UiTask[] }> {
+  const r = await getJson<{ done: ApiTask[]; open: ApiTask[] }>(`/api/review/${grain}?period=${period}`);
   return { done: r.done.map(toUiTask), open: r.open.map(toUiTask) };
 }
 

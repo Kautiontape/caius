@@ -43,6 +43,7 @@ export function funnel(result: ScanResult): Funnel {
 export interface TaskFilter {
   horizon?: string;
   grain?: string;
+  bucket?: string;
   project?: string;
   live?: boolean;
   state?: State;
@@ -52,6 +53,7 @@ export function filterTasks(result: ScanResult, f: TaskFilter): IndexedTask[] {
   return result.tasks.filter((t) => {
     if (f.horizon !== undefined && t.horizon !== f.horizon) return false;
     if (f.grain !== undefined && t.grain !== f.grain) return false;
+    if (f.bucket !== undefined && t.bucket !== f.bucket) return false;
     if (f.project !== undefined && t.project !== f.project) return false;
     if (f.live !== undefined && t.live !== f.live) return false;
     if (f.state !== undefined && t.state !== f.state) return false;
@@ -66,8 +68,8 @@ export interface ReviewSplit {
 }
 
 /** Tasks at a grain, split into completed (done/cancelled) and still-open. */
-export function reviewSplit(result: ScanResult, grain: string): ReviewSplit {
-  const at = result.tasks.filter((t) => t.grain === grain);
+export function reviewSplit(result: ScanResult, grain: string, bucket = 'this'): ReviewSplit {
+  const at = result.tasks.filter((t) => t.grain === grain && t.bucket === bucket);
   return {
     grain,
     done: at.filter((t) => !t.live),

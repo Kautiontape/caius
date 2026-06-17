@@ -66,4 +66,16 @@ describe('serveCaius (integration)', () => {
   it('GET /api/flags returns an array', async () => {
     expect(Array.isArray(await api('/api/flags'))).toBe(true);
   });
+
+  it('GET /api/review/:grain splits a grain', async () => {
+    const r = await api('/api/review/day');
+    expect(r).toHaveProperty('done');
+    expect(r).toHaveProperty('open');
+  });
+
+  it('GET /api/review/day (default period=this) excludes tasks from past buckets', async () => {
+    const r = await api('/api/review/day');
+    const texts = [...r.done.map((t: { text: string }) => t.text), ...r.open.map((t: { text: string }) => t.text)];
+    expect(texts).not.toContain('Stale overdue task');
+  });
 });
