@@ -118,8 +118,10 @@ loop:
   else: break
 TEXT := what remains (trimmed). tokens := recorded, in source order.
 ```
-Consequences (accepted false positives, per Phase 0):
-- `- [ ] Call mom!` → importance `!` (trailing `!` parses). Accepted.
+Consequences (the "whitespace-delimited" rule keeps false positives rare):
+- `- [ ] Call mom!` → `!` is glued to a word (no space) ⇒ **stays prose**. Safe.
+- `- [ ] Renew passport !` → space-separated trailing `!` ⇒ importance (the
+  accepted false-positive shape; rare in practice).
 - `- [ ] Buy milk ~2h then eggs` → `~2h` is **mid-line**, not trailing ⇒ prose. Correct.
 
 ### 3.4 Token catalog (exact)

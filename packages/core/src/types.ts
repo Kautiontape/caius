@@ -69,3 +69,11 @@ export interface TaskLine {
   tags: string[];
   blockId: string | null;
 }
+
+/** A task within a document: its line parse plus structural position (§3.6). */
+export interface ParsedTask extends TaskLine {
+  line: number; // 0-based line index of the task line
+  indent: number; // column indent (tabs expanded)
+  parentLine: number | null; // line of the nearest enclosing task, or null
+  notes: string[]; // attached non-task lines (trimmed), in source order
+}
