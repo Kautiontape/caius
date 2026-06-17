@@ -3,6 +3,9 @@ dist/
 *.tsbuildinfo
 *.sqlite
 *.sqlite-*
+*.db
+*.db-*
+caius.db
 .testvault/
 .DS_Store
 .env

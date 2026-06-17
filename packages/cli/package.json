@@ -1,0 +1,15 @@
+{
+  "name": "@caius/cli",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": {
+    "caius": "./dist/main.js"
+  },
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "dependencies": {
+    "@caius/core": "workspace:*",
+    "@caius/resolve": "workspace:*",
+    "@caius/index": "workspace:*"
+  }
+}
