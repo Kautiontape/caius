@@ -2,6 +2,8 @@
 // A periodic note's leaf filename carries a date; we recover the period and
 // compare it to *now* at the rule's granularity, yielding past/current/future.
 
+import type { Bucket } from './types.js';
+
 export type PeriodGranularity = 'day' | 'isoweek' | 'month';
 export type PeriodRelation = 'past' | 'current' | 'future';
 
@@ -70,4 +72,40 @@ export function classifyPeriod(
   if (key < ref) return 'past';
   if (key > ref) return 'future';
   return 'current';
+}
+
+/** Comparable key for the period immediately after `now` (handles year/week/month rollover). */
+function nextKey(granularity: PeriodGranularity, now: Date): number {
+  switch (granularity) {
+    case 'day': {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      return nowKey('day', d);
+    }
+    case 'isoweek': {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+      return nowKey('isoweek', d);
+    }
+    case 'month': {
+      const d = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      return nowKey('month', d);
+    }
+  }
+}
+
+/**
+ * 4-way refinement of {@link classifyPeriod}: distinguishes the *next* bucket
+ * (tomorrow / next ISO week / next month) from anything further out. Returns
+ * null when the leaf carries no parseable date for this granularity.
+ */
+export function periodBucket(
+  granularity: PeriodGranularity,
+  leaf: string,
+  now: Date,
+): Bucket | null {
+  const key = leafKey(granularity, leaf);
+  if (key === null) return null;
+  const ref = nowKey(granularity, now);
+  if (key < ref) return 'past';
+  if (key === ref) return 'this';
+  return key === nextKey(granularity, now) ? 'next' : 'future';
 }

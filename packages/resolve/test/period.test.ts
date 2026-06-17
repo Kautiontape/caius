@@ -60,3 +60,37 @@ describe('classifyPeriod — unparseable', () => {
     expect(classifyPeriod('month', 'June', now)).toBeNull();
   });
 });
+
+import { periodBucket } from '../src/period.js';
+
+describe('periodBucket — day', () => {
+  const now = new Date(2026, 5, 17); // 2026-06-17
+  const b = (leaf: string) => periodBucket('day', leaf, now);
+  it('current → this', () => expect(b('2026-06-17')).toBe('this'));
+  it('next day → next', () => expect(b('2026-06-18')).toBe('next'));
+  it('beyond next → future', () => expect(b('2026-06-20')).toBe('future'));
+  it('earlier → past', () => expect(b('2026-06-10')).toBe('past'));
+  it('unparseable → null', () => expect(b('scratch')).toBeNull());
+  it('rolls over the year for next', () =>
+    expect(periodBucket('day', '2027-01-01', new Date(2026, 11, 31))).toBe('next'));
+});
+
+describe('periodBucket — month', () => {
+  const now = new Date(2026, 5, 17);
+  const b = (leaf: string) => periodBucket('month', leaf, now);
+  it('current → this', () => expect(b('2026-06')).toBe('this'));
+  it('next → next', () => expect(b('2026-07')).toBe('next'));
+  it('beyond → future', () => expect(b('2026-09')).toBe('future'));
+  it('earlier → past', () => expect(b('2026-01')).toBe('past'));
+  it('rolls over the year for next', () =>
+    expect(periodBucket('month', '2027-01', new Date(2026, 11, 15))).toBe('next'));
+});
+
+describe('periodBucket — isoweek', () => {
+  const now = new Date(2026, 5, 17); // ISO 2026-W25
+  const b = (leaf: string) => periodBucket('isoweek', leaf, now);
+  it('current → this', () => expect(b('2026-W25')).toBe('this'));
+  it('next → next', () => expect(b('2026-W26')).toBe('next'));
+  it('beyond → future', () => expect(b('2026-W30')).toBe('future'));
+  it('earlier → past', () => expect(b('2026-W10')).toBe('past'));
+});
