@@ -14,6 +14,7 @@ export interface FunnelLane {
 export interface Funnel {
   lanes: FunnelLane[];
   now: IndexedTask[];
+  byGrain: Record<string, number>;
 }
 
 /** Live tasks grouped by horizon (funnel order) + a cross-cutting `now` lane. */
@@ -31,11 +32,17 @@ export function funnel(result: ScanResult): Funnel {
     return { horizon, count: tasks.length, tasks };
   });
   const now = result.tasks.filter((t) => t.state === 'in_progress');
-  return { lanes, now };
+  const byGrain: Record<string, number> = {};
+  for (const t of live) {
+    if (!t.grain) continue;
+    byGrain[t.grain] = (byGrain[t.grain] ?? 0) + 1;
+  }
+  return { lanes, now, byGrain };
 }
 
 export interface TaskFilter {
   horizon?: string;
+  grain?: string;
   project?: string;
   live?: boolean;
   state?: State;
@@ -44,6 +51,7 @@ export interface TaskFilter {
 export function filterTasks(result: ScanResult, f: TaskFilter): IndexedTask[] {
   return result.tasks.filter((t) => {
     if (f.horizon !== undefined && t.horizon !== f.horizon) return false;
+    if (f.grain !== undefined && t.grain !== f.grain) return false;
     if (f.project !== undefined && t.project !== f.project) return false;
     if (f.live !== undefined && t.live !== f.live) return false;
     if (f.state !== undefined && t.state !== f.state) return false;
@@ -81,6 +89,22 @@ export function dayPlan(result: ScanResult, now: Date, capacityMinutes: number):
   const estimatedMinutes = tasks.reduce((sum, t) => sum + (t.estMinutes ?? 0), 0);
   const unestimated = tasks.filter((t) => t.estMinutes === null);
   return { date, tasks, byProject, estimatedMinutes, capacityMinutes, unestimated };
+}
+
+export interface ReviewSplit {
+  grain: string;
+  done: IndexedTask[];
+  open: IndexedTask[];
+}
+
+/** Tasks at a grain, split into completed (done/cancelled) and still-open. */
+export function reviewSplit(result: ScanResult, grain: string): ReviewSplit {
+  const at = result.tasks.filter((t) => t.grain === grain);
+  return {
+    grain,
+    done: at.filter((t) => !t.live),
+    open: at.filter((t) => t.live),
+  };
 }
 
 export interface Explanation {

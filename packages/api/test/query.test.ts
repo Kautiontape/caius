@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { IndexedTask, ScanResult } from '@caius/index';
-import { funnel, filterTasks, dayPlan, explain, flagsSummary } from '../src/query.js';
+import { funnel, filterTasks, dayPlan, reviewSplit, explain, flagsSummary } from '../src/query.js';
 
 let rowid = 0;
 function mk(p: Partial<IndexedTask>): IndexedTask {
@@ -18,6 +18,8 @@ function mk(p: Partial<IndexedTask>): IndexedTask {
     done: null,
     project: null,
     horizon: 'someday',
+    grain: 'someday',
+    bucket: null,
     area: null,
     parentRowid: null,
     tokens: [],
@@ -104,5 +106,36 @@ describe('flagsSummary', () => {
     const s = flagsSummary(result);
     expect(s.find((g) => g.kind === 'invariant_violation')!.count).toBe(1);
     expect(s.find((g) => g.kind === 'dangling_ref')!.count).toBe(1);
+  });
+});
+
+describe('filterTasks — grain', () => {
+  it('filters by grain', () => {
+    const a = mk({ text: 'g1', grain: 'week' });
+    const b = mk({ text: 'g2', grain: 'day' });
+    const r: ScanResult = { ...result, tasks: [a, b] };
+    expect(filterTasks(r, { grain: 'week' }).map((t) => t.text)).toEqual(['g1']);
+  });
+});
+
+describe('funnel — byGrain', () => {
+  it('counts live tasks per grain', () => {
+    const a = mk({ text: 'g1', grain: 'week', live: true });
+    const b = mk({ text: 'g2', grain: 'day', live: true });
+    const c = mk({ text: 'g3', grain: 'day', live: false, state: 'done' });
+    const r: ScanResult = { ...result, tasks: [a, b, c] };
+    expect(funnel(r).byGrain).toEqual({ week: 1, day: 1 });
+  });
+});
+
+describe('reviewSplit', () => {
+  it('splits a grain into done and open', () => {
+    const a = mk({ text: 'd1', grain: 'day', live: false, state: 'done' });
+    const b = mk({ text: 'o1', grain: 'day', live: true, state: 'open' });
+    const c = mk({ text: 'other', grain: 'week', live: true });
+    const r: ScanResult = { ...result, tasks: [a, b, c] };
+    const split = reviewSplit(r, 'day');
+    expect(split.done.map((t) => t.text)).toEqual(['d1']);
+    expect(split.open.map((t) => t.text)).toEqual(['o1']);
   });
 });
