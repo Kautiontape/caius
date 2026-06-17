@@ -134,25 +134,27 @@ export function serveCaius(opts: ServeOptions): Promise<Server> {
       return e ? json(res, e) : json(res, null, 404);
     }
     if (p === '/api/commit' && req.method === 'POST') {
-      void readBody(req).then((raw) => {
-        let changes: CommitChange[] = [];
-        try {
-          const parsed = JSON.parse(raw || '{}');
-          changes = Array.isArray(parsed.changes) ? parsed.changes : [];
-        } catch {
-          return json(res, { error: 'invalid JSON body' }, 400);
-        }
-        const fresh = scanVault(opts.root, config, now); // diff-against-fresh-scan, not replay
-        const out = reconcileCommit(fresh, changes);
-        // Phase 1: log the intended diff; write nothing.
-        console.log(`[caius commit] applied ${out.applied.length}, conflicts ${out.conflicts.length}`);
-        for (const c of out.applied) {
-          const bucket = c.toBucket ? `/${c.toBucket}` : '';
-          const slot = c.slot ? ` [${c.slot}]` : '';
-          console.log(`  ${c.kind} ${c.snapshot.file}:${c.snapshot.line + 1} ${c.fromGrain}→${c.toGrain}${bucket}${slot}`);
-        }
-        return json(res, out);
-      });
+      void readBody(req)
+        .then((raw) => {
+          let changes: CommitChange[] = [];
+          try {
+            const parsed = JSON.parse(raw || '{}');
+            changes = Array.isArray(parsed.changes) ? parsed.changes : [];
+          } catch {
+            return json(res, { error: 'invalid JSON body' }, 400);
+          }
+          const fresh = scanVault(opts.root, config, now); // diff-against-fresh-scan, not replay
+          const out = reconcileCommit(fresh, changes);
+          // Phase 1: log the intended diff; write nothing.
+          console.log(`[caius commit] applied ${out.applied.length}, conflicts ${out.conflicts.length}`);
+          for (const c of out.applied) {
+            const bucket = c.toBucket ? `/${c.toBucket}` : '';
+            const slot = c.slot ? ` [${c.slot}]` : '';
+            console.log(`  ${c.kind} ${c.snapshot.file}:${c.snapshot.line + 1} ${c.fromGrain}→${c.toGrain}${bucket}${slot}`);
+          }
+          return json(res, out);
+        })
+        .catch((e) => json(res, { error: `commit failed: ${String(e)}` }, 500));
       return;
     }
     if (p.startsWith('/api/')) return json(res, { error: 'not found' }, 404);
