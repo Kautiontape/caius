@@ -22,6 +22,16 @@ describe('parseArgs', () => {
   it('errors when scan has no vault', () => {
     expect(parseArgs(['scan'])).toHaveProperty('error');
   });
+
+  it('parses the serve command with a default port', () => {
+    expect(parseArgs(['serve', '.testvault'])).toMatchObject({ command: 'serve', vault: '.testvault', port: 7777 });
+  });
+  it('honors --port override', () => {
+    expect(parseArgs(['serve', 'v', '--port', '9999'])).toMatchObject({ command: 'serve', vault: 'v', port: 9999 });
+  });
+  it('errors when serve has no vault', () => {
+    expect(parseArgs(['serve'])).toHaveProperty('error');
+  });
 });
 
 describe('runScan', () => {

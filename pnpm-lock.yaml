@@ -18,8 +18,26 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.19.21)
 
+  packages/api:
+    dependencies:
+      '@caius/core':
+        specifier: workspace:*
+        version: link:../core
+      '@caius/index':
+        specifier: workspace:*
+        version: link:../index
+      '@caius/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@caius/watch':
+        specifier: workspace:*
+        version: link:../watch
+
   packages/cli:
     dependencies:
+      '@caius/api':
+        specifier: workspace:*
+        version: link:../api
       '@caius/core':
         specifier: workspace:*
         version: link:../core
@@ -46,6 +64,12 @@ importers:
       '@caius/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/watch:
+    dependencies:
+      '@caius/resolve':
+        specifier: workspace:*
+        version: link:../resolve
 
 packages:
 

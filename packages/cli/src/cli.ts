@@ -13,33 +13,48 @@ export interface ScanArgs {
   db: string;
 }
 
+export interface ServeArgs {
+  command: 'serve';
+  vault: string;
+  port: number;
+}
+
 export interface ParseError {
   error: string;
 }
 
 const DEFAULT_DB = 'caius.db';
+const DEFAULT_PORT = 7777;
+const USAGE = 'usage: caius scan <vault> [--db <path>]  |  caius serve <vault> [--port <n>]';
 
-export function parseArgs(argv: string[]): ScanArgs | ParseError {
+export function parseArgs(argv: string[]): ScanArgs | ServeArgs | ParseError {
   const [command, ...rest] = argv;
-  if (!command) return { error: 'usage: caius scan <vault> [--db <path>]' };
-  if (command !== 'scan') return { error: `unknown command "${command}" (expected: scan)` };
+  if (!command) return { error: USAGE };
+  if (command !== 'scan' && command !== 'serve') {
+    return { error: `unknown command "${command}" (expected: scan | serve)` };
+  }
 
   let vault: string | undefined;
   let db = DEFAULT_DB;
+  let port = DEFAULT_PORT;
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i]!;
-    if (a === '--db') {
+    if (a === '--db' && command === 'scan') {
       const v = rest[++i];
       if (!v) return { error: '--db requires a path' };
       db = v;
+    } else if (a === '--port' && command === 'serve') {
+      const v = rest[++i];
+      if (!v || Number.isNaN(Number(v))) return { error: '--port requires a number' };
+      port = Number(v);
     } else if (!vault) {
       vault = a;
     } else {
       return { error: `unexpected argument "${a}"` };
     }
   }
-  if (!vault) return { error: 'scan requires a vault path' };
-  return { command: 'scan', vault, db };
+  if (!vault) return { error: `${command} requires a vault path` };
+  return command === 'scan' ? { command: 'scan', vault, db } : { command: 'serve', vault, port };
 }
 
 export function runScan(

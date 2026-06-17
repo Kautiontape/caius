@@ -6,5 +6,10 @@
     "composite": true
   },
   "include": ["src/**/*.ts"],
-  "references": [{ "path": "../core" }, { "path": "../resolve" }, { "path": "../index" }]
+  "references": [
+    { "path": "../core" },
+    { "path": "../resolve" },
+    { "path": "../index" },
+    { "path": "../api" }
+  ]
 }

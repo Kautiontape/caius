@@ -10,6 +10,7 @@
   "dependencies": {
     "@caius/core": "workspace:*",
     "@caius/resolve": "workspace:*",
-    "@caius/index": "workspace:*"
+    "@caius/index": "workspace:*",
+    "@caius/api": "workspace:*"
   }
 }
