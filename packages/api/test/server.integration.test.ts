@@ -78,4 +78,37 @@ describe('serveCaius (integration)', () => {
     const texts = [...r.done.map((t: { text: string }) => t.text), ...r.open.map((t: { text: string }) => t.text)];
     expect(texts).not.toContain('Stale overdue task');
   });
+
+  it('POST /api/commit reconciles against a fresh scan and writes nothing', async () => {
+    // 'Backlog item' is live at 10 - Project/Caius/tasks.md line index 1.
+    const ok = {
+      taskId: '10 - Project/Caius/tasks.md\n1',
+      fromGrain: 'someday', toGrain: 'month', toBucket: 'this', kind: 'promote',
+      snapshot: { file: '10 - Project/Caius/tasks.md', line: 1, text: 'Backlog item' },
+    };
+    const stale = {
+      taskId: '10 - Project/Caius/tasks.md\n1',
+      fromGrain: 'someday', toGrain: 'month', toBucket: 'this', kind: 'promote',
+      snapshot: { file: '10 - Project/Caius/tasks.md', line: 1, text: 'WRONG TEXT' },
+    };
+    const res = await fetch(server.url + '/api/commit', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ changes: [ok] }),
+    }).then((r) => r.json());
+    expect(res.applied).toHaveLength(1);
+    expect(res.conflicts).toHaveLength(0);
+
+    const res2 = await fetch(server.url + '/api/commit', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ changes: [stale] }),
+    }).then((r) => r.json());
+    expect(res2.applied).toHaveLength(0);
+    expect(res2.conflicts).toHaveLength(1);
+
+    // No write-back: the summary task counts are unchanged after committing.
+    const s = await api('/api/summary');
+    expect(s.report.taskCount).toBe(4);
+  });
 });
