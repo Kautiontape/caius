@@ -5,3 +5,11 @@ export interface Derived {
   rule: string;
   source: string;
 }
+
+/** Presentation grains (the GUI's vocabulary). Must match the GUI's lib/grains.ts. */
+export const GRAINS = ['someday', 'month', 'week', 'day'] as const;
+export type Grain = (typeof GRAINS)[number];
+
+/** Period bucket relative to *now* at a grain's granularity. */
+export const BUCKETS = ['past', 'this', 'next', 'future'] as const;
+export type Bucket = (typeof BUCKETS)[number];
