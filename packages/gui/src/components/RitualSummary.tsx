@@ -12,7 +12,7 @@ interface Props {
 /** Reserved slot — counts only in Phase 1; narrative summary is deferred (spec §9). */
 export function RitualSummary({ altitude, doneCount, openCount, stagedCount, completedMinutes, capacityMinutes }: Props) {
   return (
-    <div className="rounded-lg border border-line bg-panel p-3 text-sm" data-testid="ritual-summary">
+    <div className="rounded-lg border border-line bg-panel p-3 text-sm shadow-sm" data-testid="ritual-summary">
       <span className="text-ink">{doneCount} done</span>
       <span className="text-dim"> · </span>
       <span className="text-ink">{openCount} open</span>

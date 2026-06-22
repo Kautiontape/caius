@@ -11,7 +11,7 @@ interface Props {
 
 export function PendingTray({ changes, commitLabel, conflicts = [], onUnstage, onCommit }: Props) {
   return (
-    <aside className="rounded-lg border border-line bg-panel p-3" data-testid="pending-tray">
+    <aside className="rounded-lg border border-line bg-panel p-3 shadow-sm" data-testid="pending-tray">
       <div className="mb-2 text-xs uppercase tracking-wide text-dim">Staging buffer</div>
       {changes.length === 0 ? (
         <div className="text-sm italic text-dim" data-testid="tray-empty">staging buffer empty</div>

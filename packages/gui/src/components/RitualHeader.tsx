@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { RITUALS, type Altitude, type Posture } from '../lib/grains';
+import { ThemeToggle } from './ThemeToggle';
 
 interface Props {
   altitude: Altitude;
@@ -39,7 +40,10 @@ export function RitualHeader({ altitude, posture, onPick, onPosture }: Props) {
         ))}
       </div>
 
-      <span className="ml-auto text-dim text-xs">{ritual.blurb}</span>
+      <div className="ml-auto flex items-center gap-3">
+        <span className="text-dim text-xs">{ritual.blurb}</span>
+        <ThemeToggle />
+      </div>
 
       {open && (
         <div

@@ -36,7 +36,7 @@ export function DayPlanView({ source, capacityMinutes, pending, onStage, onUnsta
     const est = estFor(changes);
     const over = est > capacityMinutes;
     return (
-      <div className="flex-1 rounded-lg border border-line bg-panel p-3" data-testid={`day-col-${slot}`}>
+      <div className="flex-1 rounded-lg border border-line bg-panel p-3 shadow-sm" data-testid={`day-col-${slot}`}>
         <div className="flex items-center justify-between text-xs uppercase tracking-wide text-dim">
           <span>{title}</span>
           <span data-testid={`cap-${slot}`} className={over ? 'text-over' : ''}>{est}/{capacityMinutes}m</span>
@@ -58,7 +58,7 @@ export function DayPlanView({ source, capacityMinutes, pending, onStage, onUnsta
 
   return (
     <section data-testid="day-plan-view" className="flex gap-4">
-      <div className="flex-1 rounded-lg border border-line bg-panel p-3" data-testid="day-col-source">
+      <div className="flex-1 rounded-lg border border-line bg-panel p-3 shadow-sm" data-testid="day-col-source">
         <div className="text-xs uppercase tracking-wide text-dim">Orbit (this week)</div>
         <div className="mt-2 flex flex-col gap-1.5">
           {source.filter((t) => !pending[t.id]).map((t) => (

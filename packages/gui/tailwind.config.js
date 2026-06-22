@@ -1,12 +1,15 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
+      // Tokens resolve to CSS variables so the whole palette swaps with the
+      // `.dark` class on <html> — see src/index.css for the light/dark values.
       colors: {
-        ink: '#e6edf3', dim: '#8b97a7', bg: '#0e1116',
-        panel: '#161b22', panel2: '#1c2330', line: '#2a3340',
-        accent: '#5aa9ff', warn: '#ffb454', over: '#ff6b6b', good: '#3fb950',
+        ink: 'var(--ink)', dim: 'var(--dim)', bg: 'var(--bg)',
+        panel: 'var(--panel)', panel2: 'var(--panel2)', line: 'var(--line)',
+        accent: 'var(--accent)', warn: 'var(--warn)', over: 'var(--over)', good: 'var(--good)',
       },
     },
   },

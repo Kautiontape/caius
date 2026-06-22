@@ -4,6 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Caius</title>
+    <script>
+      // Apply the saved theme before first paint so there's no flash.
+      // Default is light (bright); only go dark if the user chose it.
+      try { if (localStorage.getItem('caius-theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root" data-testid="root"></div>

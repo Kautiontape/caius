@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light is the default — warm, welcoming. Dark (the original palette) is one
+   toggle away via a `.dark` class on <html>; see src/lib/theme.ts. */
+:root {
+  color-scheme: light;
+  --bg: #faf7f2;       /* warm paper-white page          */
+  --ink: #1f2533;      /* dark slate text                */
+  --dim: #6b7280;      /* muted secondary text           */
+  --panel: #ffffff;    /* columns / tray — pop off cream */
+  --panel2: #f1ece3;   /* task cards & pills inside panels*/
+  --line: #e4ddd1;     /* warm hairline borders          */
+  --accent: #2f77e6;   /* blue — links, plan posture     */
+  --warn: #c2790f;     /* amber — review posture          */
+  --over: #d64545;     /* red — overdue                  */
+  --good: #2c9a4a;     /* green — now / done             */
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0e1116;
+  --ink: #e6edf3;
+  --dim: #8b97a7;
+  --panel: #161b22;
+  --panel2: #1c2330;
+  --line: #2a3340;
+  --accent: #5aa9ff;
+  --warn: #ffb454;
+  --over: #ff6b6b;
+  --good: #3fb950;
+}
+
 html, body, #root { height: 100%; }
-body { margin: 0; background: #0e1116; color: #e6edf3;
+body { margin: 0; background: var(--bg); color: var(--ink);
   font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+
+/* Gentle cross-fade when flipping themes (respects reduced-motion). */
+@media (prefers-reduced-motion: no-preference) {
+  body * { transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease; }
+}
