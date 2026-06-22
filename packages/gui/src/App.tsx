@@ -66,39 +66,43 @@ export function App() {
         overdueCount={overdue.length}
         nowCount={funnel?.now.length ?? 0}
       />
-      <main data-testid="ritual-body">
-        {posture === 'plan' && (
-          <PlanBoard
-            altitude={altitude}
-            capacityMinutes={summary?.capacityMinutes ?? 480}
-            buffer={buffer}
-            onStage={onStage}
-            onUnstage={onUnstage}
-            onCommit={() => void onCommit()}
-            conflicts={conflicts}
-          />
-        )}
-        {posture === 'review' && (
-          <div className="grid grid-cols-[1fr_320px] gap-5 p-5">
-            <div className="flex flex-col gap-4">
-              <RitualSummary
-                altitude={altitude}
-                doneCount={review.done.length}
-                openCount={review.open.length}
-                stagedCount={Object.keys(buffer).length}
-              />
-              <ReviewView
-                altitude={altitude}
-                done={review.done}
-                open={review.open}
-                pending={buffer}
-                onStage={onStage}
-                onUnstage={onUnstage}
-              />
+      {mode === 'focus' ? (
+        <main className="p-5 text-dim" data-testid="focus-placeholder">Focus mode — coming soon.</main>
+      ) : (
+        <main data-testid="ritual-body">
+          {posture === 'plan' && (
+            <PlanBoard
+              altitude={altitude}
+              capacityMinutes={summary?.capacityMinutes ?? 480}
+              buffer={buffer}
+              onStage={onStage}
+              onUnstage={onUnstage}
+              onCommit={() => void onCommit()}
+              conflicts={conflicts}
+            />
+          )}
+          {posture === 'review' && (
+            <div className="grid grid-cols-[1fr_320px] gap-5 p-5">
+              <div className="flex flex-col gap-4">
+                <RitualSummary
+                  altitude={altitude}
+                  doneCount={review.done.length}
+                  openCount={review.open.length}
+                  stagedCount={Object.keys(buffer).length}
+                />
+                <ReviewView
+                  altitude={altitude}
+                  done={review.done}
+                  open={review.open}
+                  pending={buffer}
+                  onStage={onStage}
+                  onUnstage={onUnstage}
+                />
+              </div>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      )}
     </div>
   );
 }
