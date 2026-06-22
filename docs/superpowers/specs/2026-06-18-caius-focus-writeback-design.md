@@ -1,12 +1,16 @@
 ---
 title: Caius — Focus mode + in-place write-back (implementation spec)
-status: approved
+status: superseded
+superseded_by: 2026-06-22-caius-planning-redesign-design.md (folded in as Phase B)
 date: 2026-06-18
 builds_on: "2026-06-17-caius-ritual-gui-design.md (ritual GUI), 2026-06-17-caius-phase1-design.md (engine)"
 target_vault: /home/shawn/documents/obsidian/Main
 ---
 
 # Caius — Focus mode + in-place write-back
+
+> **Superseded** — folded into `2026-06-22-caius-planning-redesign-design.md` as **Phase B**.
+> Kept for history; the combined spec is authoritative.
 
 This adds the **doing/editing** layer on top of the ritual planning surface: a Focus
 view for today, live check-off / in-progress / archive, a Sunsama-style shutdown
