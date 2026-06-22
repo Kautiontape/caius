@@ -69,6 +69,9 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
         {BUCKETS.map((g) => {
           const staged = stagedFor(g);
           const member = members[g] ?? [];
+          // Resolve staged tasks from the Someday source — correct for now because staging
+          // buttons exist only on Source cards. Cross-bucket moves (drag) in the next task
+          // will need to resolve from a broader set (members/buffer snapshot).
           const stagedTasks = staged.map((c) => source.find((s) => s.id === c.taskId)).filter((t): t is UiTask => !!t);
           const cards = [
             ...member.map((t) => <TaskCard key={`m-${t.id}`} task={t} showFile />),
