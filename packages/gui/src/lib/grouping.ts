@@ -14,13 +14,12 @@ export function documentTitle(file: string): string {
 
 export function groupSource(tasks: UiTask[]): SourceGroup[] {
   const projects = new Map<string, UiTask[]>();
-  const docs = new Map<string, { file: string; tasks: UiTask[] }>();
+  const docs = new Map<string, { tasks: UiTask[] }>();
   for (const t of tasks) {
     if (t.project) {
       (projects.get(t.project) ?? projects.set(t.project, []).get(t.project)!).push(t);
     } else {
-      const title = documentTitle(t.file);
-      (docs.get(title) ?? docs.set(title, { file: t.file, tasks: [] }).get(title)!).tasks.push(t);
+      (docs.get(t.file) ?? docs.set(t.file, { tasks: [] }).get(t.file)!).tasks.push(t);
     }
   }
   const byKey = (a: { title: string }, b: { title: string }) => a.title.localeCompare(b.title);
@@ -28,7 +27,7 @@ export function groupSource(tasks: UiTask[]): SourceGroup[] {
     .map(([title, tasks]) => ({ kind: 'project' as const, key: `project:${title}`, title, tasks }))
     .sort(byKey);
   const docGroups: SourceGroup[] = [...docs.entries()]
-    .map(([title, { file, tasks }]) => ({ kind: 'document' as const, key: `doc:${file}`, title, tasks }))
+    .map(([file, { tasks }]) => ({ kind: 'document' as const, key: `doc:${file}`, title: documentTitle(file), tasks }))
     .sort(byKey);
   return [...projectGroups, ...docGroups];
 }

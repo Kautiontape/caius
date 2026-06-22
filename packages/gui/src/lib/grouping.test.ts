@@ -28,4 +28,16 @@ describe('groupSource', () => {
       ['project', 'Alpha'], ['project', 'Zebra'], ['document', 'Budget'], ['document', 'Health'],
     ]);
   });
+
+  it('keeps same-basename files in separate document groups (no basename collision)', () => {
+    const tasks = [
+      t({ file: '20 - Area/Health.md', line: 1, project: null }),
+      t({ file: '10 - Project/Health.md', line: 2, project: null }),
+    ];
+    const groups = groupSource(tasks);
+    const docGroups = groups.filter((g) => g.kind === 'document');
+    expect(docGroups).toHaveLength(2);
+    expect(docGroups[0].tasks).toHaveLength(1);
+    expect(docGroups[1].tasks).toHaveLength(1);
+  });
 });
