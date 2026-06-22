@@ -41,7 +41,7 @@ export interface Ritual {
 }
 
 /** The three horizon buckets, coarsest→finest (someday is the source, not a bucket). */
-export const BUCKETS: Grain[] = ['month', 'week', 'day'];
+export const BUCKETS: ('month' | 'week' | 'day')[] = ['month', 'week', 'day'];
 /** Bucket display labels (month renamed "Planned" per the redesign). */
 export const BUCKET_LABEL: Record<'month' | 'week' | 'day', string> = {
   month: 'Planned', week: 'Orbit', day: 'Today',

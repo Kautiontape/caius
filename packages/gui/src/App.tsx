@@ -1,15 +1,13 @@
 import { useEffect, useReducer, useState } from 'react';
 import { type Altitude, type Posture, RITUALS } from './lib/grains';
 import {
-  fetchFunnel, fetchSummary, fetchOverdue, fetchTasksAtGrain, fetchReview,
+  fetchFunnel, fetchSummary, fetchOverdue, fetchReview,
   type FunnelData, type SummaryData, type UiTask,
 } from './lib/api';
 import { stagingReducer, commit, type PendingChange, type CommitResult } from './lib/staging';
 import { PlanHeader } from './components/PlanHeader';
 import { PipelineStrip } from './components/PipelineStrip';
-import { PlanView } from './components/PlanView';
-import { DayPlanView } from './components/DayPlanView';
-import { PendingTray } from './components/PendingTray';
+import { PlanBoard } from './components/PlanBoard';
 import { ReviewView } from './components/ReviewView';
 import { RitualSummary } from './components/RitualSummary';
 
@@ -17,12 +15,10 @@ export function App() {
   const [altitude, setAltitude] = useState<Altitude>('day');
   const [posture, setPosture] = useState<Posture>('plan');
   const [mode, setMode] = useState<'plan' | 'focus'>('plan');
-  const [targetBucket, setTargetBucket] = useState<'this' | 'next'>('this');
 
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [overdue, setOverdue] = useState<UiTask[]>([]);
-  const [source, setSource] = useState<UiTask[]>([]);
   const [review, setReview] = useState<{ done: UiTask[]; open: UiTask[] }>({ done: [], open: [] });
 
   const [buffer, dispatch] = useReducer(stagingReducer, {});
@@ -35,11 +31,6 @@ export function App() {
     void fetchSummary().then(setSummary);
     void fetchOverdue().then(setOverdue);
   }, []);
-
-  useEffect(() => {
-    if (posture === 'plan' && ritual.from)
-      void fetchTasksAtGrain(ritual.from, altitude === 'day' ? 'this' : undefined).then(setSource);
-  }, [posture, ritual.from, altitude]);
 
   useEffect(() => {
     if (posture === 'review' && ritual.grain) void fetchReview(ritual.grain).then(setReview);
@@ -75,43 +66,20 @@ export function App() {
         overdueCount={overdue.length}
         nowCount={funnel?.now.length ?? 0}
       />
-      <main className="grid grid-cols-[1fr_320px] gap-5 p-5" data-testid="ritual-body">
-        <div>
-          {posture === 'plan' && altitude !== 'day' && (
-            <div className="mb-3 flex gap-1 text-xs" data-testid="bucket-toggle">
-              {(['this', 'next'] as const).map((b) => (
-                <button
-                  key={b}
-                  data-testid={`bucket-${b}`}
-                  onClick={() => setTargetBucket(b)}
-                  className={`rounded px-2 py-1 ${targetBucket === b ? 'bg-panel2 text-ink' : 'text-dim'}`}
-                >
-                  {b} {altitude}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {posture === 'plan' && altitude === 'day' && (
-            <DayPlanView
-              source={source}
-              capacityMinutes={summary?.capacityMinutes ?? 480}
-              pending={buffer}
-              onStage={onStage}
-              onUnstage={onUnstage}
-            />
-          )}
-          {posture === 'plan' && altitude !== 'day' && (
-            <PlanView
-              altitude={altitude}
-              source={source}
-              targetBucket={targetBucket}
-              pending={buffer}
-              onStage={onStage}
-              onUnstage={onUnstage}
-            />
-          )}
-          {posture === 'review' && (
+      <main data-testid="ritual-body">
+        {posture === 'plan' && (
+          <PlanBoard
+            altitude={altitude}
+            capacityMinutes={summary?.capacityMinutes ?? 480}
+            buffer={buffer}
+            onStage={onStage}
+            onUnstage={onUnstage}
+            onCommit={() => void onCommit()}
+            conflicts={conflicts}
+          />
+        )}
+        {posture === 'review' && (
+          <div className="grid grid-cols-[1fr_320px] gap-5 p-5">
             <div className="flex flex-col gap-4">
               <RitualSummary
                 altitude={altitude}
@@ -128,16 +96,8 @@ export function App() {
                 onUnstage={onUnstage}
               />
             </div>
-          )}
-        </div>
-
-        <PendingTray
-          changes={Object.values(buffer)}
-          commitLabel={`commit ${ritual.title.toLowerCase()}`}
-          conflicts={conflicts}
-          onUnstage={onUnstage}
-          onCommit={() => void onCommit()}
-        />
+          </div>
+        )}
       </main>
     </div>
   );
