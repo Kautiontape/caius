@@ -17,11 +17,11 @@ Two phases under one design:
   Today**), and **drag-and-drop** as the only way tasks move.
 - **Phase B — Focus & in-place write-back** (folded in from the 2026-06-18 focus spec). The
   **doing/editing** layer: a **Focus** mode for today with live check-off / in-progress /
-  archive, a Sunsama-style shutdown calculator, and an **edit modal** — all powered by
-  Caius's **first real write-back** to the vault.
+  archive, a Sunsama-style shutdown calculator, an **edit modal**, and **quick-add capture**
+  of brand-new tasks — all powered by Caius's **first real write-back** to the vault.
 
 The two phases ship in order (A is lower-risk and unblocks daily use; B introduces disk
-writes). The implementation will likely be **two plans** (one per phase) sharing this spec.
+writes), delivered as **one implementation plan** covering both.
 
 ---
 
@@ -174,6 +174,24 @@ lives on the shared `TaskCard`). Fields: text, estimate, importance (none/!/!!/!
 sends only changed fields as a `patch` (live write); **Cancel** discards; `409` surfaces the
 conflict and reloads.
 
+## B6. Capture (quick-add) — the default place to add tasks
+
+Append a brand-new task to a **default capture note**.
+
+- **Target:** `config.captureNote`, default = **today's daily note**
+  (`02 - Periodic/Daily/YYYY/MM/YYYY-MM-DD.md`), **created with minimal content if missing**.
+  Configurable to point elsewhere (e.g. an Inbox note).
+- **Write primitive:** `appendTask(root, { note, text })` in `packages/write` — parse `text`
+  for inline grammar tokens (reuse `core` parse), render `- [ ] <line>`, append at end of the
+  note (or a configured heading), create the file if absent; atomic write. Captured tasks carry
+  **no `^id`** (reconcile by file,line like everywhere else).
+- **API:** `POST /api/capture { text, note? }` → `200 {ok}`; the watcher re-scans and the new
+  task surfaces (in Source, since a fresh open task with no horizon resolves to Someday — or in
+  Today if captured into today's note).
+- **GUI:** a persistent `QuickAdd` input pinned at the top of the board (+ a keyboard shortcut).
+  Enter submits, supports inline tokens (`~30m`, `!!`, `*2026-07-01`, `:[[Project]]`),
+  optimistic, clears on success.
+
 ---
 
 ## Components & files (both phases)
@@ -183,12 +201,13 @@ packages/core/src/
   render-line.ts        renderTaskLine() + glyph map                      (new, B)
   parse-line.ts         + marker + indentText                             (modify, B)
   types.ts              marker/indentText on the line type                (modify, B)
-packages/write/         applyTaskUpdate() (reconcile→render→atomic write) (new package, B)
+packages/write/         applyTaskUpdate() + appendTask() (reconcile→write/append, atomic) (new package, B)
 packages/index/src/scan.ts   IndexedTask gains notes[]                     (modify, B)
 packages/api/src/
-  server.ts             POST /api/task, GET /api/focus                    (modify, B)
+  server.ts             POST /api/task, POST /api/capture, GET /api/focus  (modify, B)
   query.ts              reviewSplit done-only; focus()                     (modify, B)
-  task.ts               request validation + applyTaskUpdate wiring        (new, B)
+  task.ts               validation + applyTaskUpdate / appendTask wiring   (new, B)
+packages/resolve/src/config.ts   captureNote (default: today's daily note)  (modify, B)
 packages/gui/src/
   App.tsx               mode (plan|focus) + altitude/posture; compose board / review / focus  (modify, A+B)
   components/
@@ -199,13 +218,14 @@ packages/gui/src/
     FocusView.tsx       today list + live controls + calc banner           (new, B)
     ShutdownBar.tsx     the calculator banner                              (new, B)
     EditModal.tsx       the edit modal                                     (new, B)
+    QuickAdd.tsx        quick-add capture input (inline tokens)            (new, B)
     TaskCard.tsx        drag handle + file chip (A); edit affordance (B)   (modify, A+B)
     ReviewView.tsx      file chips on non-project rows                     (modify, A)
     PendingTray.tsx / SkipMenu.tsx / PlanView.tsx / DayPlanView.tsx        (DELETE, A)
   lib/
     grouping.ts         groupSource() pure helper + types                  (new, A)
     grains.ts           keep; maybe BUCKETS = [month,week,day]             (modify, A)
-    api.ts              postTask(), fetchFocus(), shutdown()               (modify, B)
+    api.ts              postTask(), postCapture(), fetchFocus(), shutdown() (modify, B)
     staging.ts          unchanged (reused)
 ```
 
@@ -232,6 +252,9 @@ B3. Focus view + shutdown — `GET /api/focus`; `FocusView` + live controls; `Sh
 `shutdown()` unit test; the header Focus switch goes live.
 B4. Edit modal — `EditModal` + field patches via `POST /api/task`, reachable from Focus + Plan
 board + Review cards.
+B5. Capture — `appendTask` + `POST /api/capture` (+ create-if-missing daily note) with
+temp-file tests; `config.captureNote`; `QuickAdd` input (inline-token parse) + keyboard
+shortcut on the board.
 
 ## Testing
 
@@ -243,15 +266,17 @@ board + Review cards.
   field + contiguous-note-block (subtasks present) + `expectedText` mismatch → no-write
   conflict. api: `POST /api/task` changes disk + returns task; conflict 409 leaves file
   untouched; `GET /api/focus` shape; `reviewSplit` excludes cancelled. gui: `shutdown()` unit;
-  Playwright Focus check-off/in-progress/archive + edit-modal persist + conflict path.
+  Playwright Focus check-off/in-progress/archive + edit-modal persist + conflict path. capture:
+  `appendTask` temp-file test (append + create-if-missing + inline tokens); Playwright quick-add
+  → task appears after re-scan.
 - All 195 existing tests stay green; `grains.test.ts` engine-parity unchanged.
 
 ## Non-goals / relationship to other specs
 
 - **Supersedes** ritual-GUI navigation + single staging-buffer; **absorbs** the 2026-06-18
   focus-writeback spec (now Phase B here — that file is marked superseded).
-- **No quick-add / capture** of brand-new tasks to a default note. Your original "add … current
-  tasks" wish is *manage/edit* (covered by Phase B), not *create-new* — capture remains
-  unspecced and is a candidate for its own follow-up spec.
+- **Quick-add / capture is in scope** (Phase B, §B6): append a new task to a default note
+  (`config.captureNote`, default = today's daily note, created if missing). Still **no `^id`
+  minting** on captured tasks (reconcile by file,line like everything else).
 - Phase A: no engine/API changes. Phase B: no cross-file moves / tombstones / `^id` minting
   (planning commit stays log-only); no time tracking; no recurrence.
