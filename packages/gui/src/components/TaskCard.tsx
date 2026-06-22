@@ -5,6 +5,7 @@ interface Props {
   task: UiTask;
   staged?: boolean;
   actions?: ReactNode;
+  showFile?: boolean;
 }
 
 function estLabel(min: number | null): string {
@@ -14,7 +15,7 @@ function estLabel(min: number | null): string {
   return `~${min}m`;
 }
 
-export function TaskCard({ task, staged, actions }: Props) {
+export function TaskCard({ task, staged, actions, showFile }: Props) {
   return (
     <div
       data-testid="task-card"
@@ -34,6 +35,11 @@ export function TaskCard({ task, staged, actions }: Props) {
         {task.project && <span className="text-accent">{task.project}</span>}
         <span className={task.estMinutes == null ? 'text-warn' : ''}>{estLabel(task.estMinutes)}</span>
         {task.importance > 0 && <span>{'!'.repeat(task.importance)}</span>}
+        {showFile && !task.project && (
+          <span className="rounded border border-line bg-panel px-1.5 text-[11px] text-dim" data-testid="file-chip">
+            {task.file}
+          </span>
+        )}
       </div>
     </div>
   );
