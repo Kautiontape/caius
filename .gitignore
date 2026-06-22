@@ -13,3 +13,6 @@ caius.db
 # Playwright MCP artifacts
 .playwright-mcp/
 caius-gui.png
+
+# Visual brainstorming companion
+.superpowers/
