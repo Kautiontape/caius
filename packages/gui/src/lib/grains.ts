@@ -40,6 +40,13 @@ export interface Ritual {
   blurb: string;
 }
 
+/** The three horizon buckets, coarsest→finest (someday is the source, not a bucket). */
+export const BUCKETS: Grain[] = ['month', 'week', 'day'];
+/** Bucket display labels (month renamed "Planned" per the redesign). */
+export const BUCKET_LABEL: Record<'month' | 'week' | 'day', string> = {
+  month: 'Planned', week: 'Orbit', day: 'Today',
+};
+
 export const RITUALS: Record<Altitude, Record<Posture, Ritual>> = {
   month: {
     plan: { key: 'month-plan', altitude: 'month', posture: 'plan', title: 'Monthly planning', from: 'someday', to: 'month', blurb: 'what is worth committing to a month' },

@@ -5,7 +5,7 @@ import {
   type FunnelData, type SummaryData, type UiTask,
 } from './lib/api';
 import { stagingReducer, commit, type PendingChange, type CommitResult } from './lib/staging';
-import { RitualHeader } from './components/RitualHeader';
+import { PlanHeader } from './components/PlanHeader';
 import { PipelineStrip } from './components/PipelineStrip';
 import { PlanView } from './components/PlanView';
 import { DayPlanView } from './components/DayPlanView';
@@ -16,6 +16,7 @@ import { RitualSummary } from './components/RitualSummary';
 export function App() {
   const [altitude, setAltitude] = useState<Altitude>('day');
   const [posture, setPosture] = useState<Posture>('plan');
+  const [mode, setMode] = useState<'plan' | 'focus'>('plan');
   const [targetBucket, setTargetBucket] = useState<'this' | 'next'>('this');
 
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
@@ -58,11 +59,13 @@ export function App() {
 
   return (
     <div className="min-h-full">
-      <RitualHeader
+      <PlanHeader
         altitude={altitude}
         posture={posture}
-        onPick={(a, p) => { setAltitude(a); setPosture(p); }}
+        mode={mode}
+        onGrain={setAltitude}
         onPosture={setPosture}
+        onMode={setMode}
       />
       <PipelineStrip
         byGrain={funnel?.byGrain ?? {}}
