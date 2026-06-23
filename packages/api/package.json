@@ -14,6 +14,7 @@
     "@caius/core": "workspace:*",
     "@caius/resolve": "workspace:*",
     "@caius/index": "workspace:*",
-    "@caius/watch": "workspace:*"
+    "@caius/watch": "workspace:*",
+    "@caius/write": "workspace:*"
   }
 }

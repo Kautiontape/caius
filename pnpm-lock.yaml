@@ -32,6 +32,9 @@ importers:
       '@caius/watch':
         specifier: workspace:*
         version: link:../watch
+      '@caius/write':
+        specifier: workspace:*
+        version: link:../write
 
   packages/cli:
     dependencies:

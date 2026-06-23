@@ -128,6 +128,18 @@ describe('reviewSplit', () => {
     // past-open must be excluded from the default 'this' split
     expect(split.open.map((t) => t.text)).not.toContain('past-open');
   });
+  it('hides cancelled tasks from BOTH done and open', () => {
+    const done = mk({ text: 'd1', grain: 'day', live: false, state: 'done', bucket: 'this' });
+    const open = mk({ text: 'o1', grain: 'day', live: true, state: 'open', bucket: 'this' });
+    const inprog = mk({ text: 'p1', grain: 'day', live: true, state: 'in_progress', bucket: 'this' });
+    const cancelled = mk({ text: 'c1', grain: 'day', live: false, state: 'cancelled', bucket: 'this' });
+    const r: ScanResult = { ...result, tasks: [done, open, inprog, cancelled] };
+    const split = reviewSplit(r, 'day');
+    expect(split.done.map((t) => t.text)).toEqual(['d1']); // done-only, no cancelled
+    expect(split.open.map((t) => t.text).sort()).toEqual(['o1', 'p1']);
+    const all = [...split.done, ...split.open].map((t) => t.text);
+    expect(all).not.toContain('c1'); // cancelled appears in neither list
+  });
   it('returns past-bucket tasks when explicitly requested', () => {
     const a = mk({ text: 'd1', grain: 'day', live: false, state: 'done', bucket: 'this' });
     const b = mk({ text: 'o1', grain: 'day', live: true, state: 'open', bucket: 'this' });

@@ -67,12 +67,13 @@ export interface ReviewSplit {
   open: IndexedTask[];
 }
 
-/** Tasks at a grain, split into completed (done/cancelled) and still-open. */
+/** Tasks at a grain, split into completed (done) and still-open; cancelled and
+ * tombstone tasks are hidden — they appear in NEITHER list. */
 export function reviewSplit(result: ScanResult, grain: string, bucket = 'this'): ReviewSplit {
   const at = result.tasks.filter((t) => t.grain === grain && t.bucket === bucket);
   return {
     grain,
-    done: at.filter((t) => !t.live),
+    done: at.filter((t) => t.state === 'done'),
     open: at.filter((t) => t.live),
   };
 }

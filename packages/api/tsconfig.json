@@ -10,6 +10,7 @@
     { "path": "../core" },
     { "path": "../resolve" },
     { "path": "../index" },
-    { "path": "../watch" }
+    { "path": "../watch" },
+    { "path": "../write" }
   ]
 }

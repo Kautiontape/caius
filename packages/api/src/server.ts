@@ -12,6 +12,7 @@ import { DEFAULT_CONFIG, type Config } from '@caius/resolve';
 import type { State } from '@caius/core';
 import { funnel, filterTasks, reviewSplit, explain, flagsSummary } from './query.js';
 import { reconcileCommit, type CommitChange } from './commit.js';
+import { handleTaskUpdate } from './task.js';
 
 export interface ServeOptions {
   root: string;
@@ -158,6 +159,22 @@ export function serveCaius(opts: ServeOptions): Promise<Server> {
           return json(res, out);
         })
         .catch((e) => json(res, { error: `commit failed: ${String(e)}` }, 500));
+      return;
+    }
+    if (p === '/api/task' && req.method === 'POST') {
+      void readBody(req)
+        .then((raw) => {
+          const out = handleTaskUpdate(opts.root, config, now, raw);
+          // A successful write returns a fresh scan; adopt it immediately so a
+          // following GET reflects the change without waiting on the watcher's
+          // debounce (the watcher will also fire — harmless/idempotent).
+          if (out.fresh) {
+            result = out.fresh;
+            opts.onRescan?.(result);
+          }
+          return json(res, out.body, out.status);
+        })
+        .catch((e) => json(res, { error: `task failed: ${String(e)}` }, 500));
       return;
     }
     if (p.startsWith('/api/')) return json(res, { error: 'not found' }, 404);
