@@ -10,15 +10,25 @@ import { ShutdownBar } from './ShutdownBar';
 export function FocusView() {
   const [data, setData] = useState<FocusData>({ date: '', active: [], doneToday: 0 });
   const [conflict, setConflict] = useState(false);
+  const [writing, setWriting] = useState(false);
 
-  const refresh = () => void fetchFocus().then(setData);
-  useEffect(refresh, []);
+  const refresh = () => { void fetchFocus().then(setData); };
+  useEffect(() => {
+    let alive = true;
+    void fetchFocus().then((d) => { if (alive) setData(d); });
+    return () => { alive = false; };
+  }, []);
 
   const act = async (task: ApiTask, patch: Record<string, unknown>) => {
-    const res = await postTask({ file: task.file, line: task.line, expectedText: task.text, patch });
-    if (res.conflict) setConflict(true);
-    else setConflict(false);
-    refresh();
+    if (writing) return;
+    setWriting(true);
+    try {
+      const res = await postTask({ file: task.file, line: task.line, expectedText: task.text, patch });
+      setConflict(Boolean(res.conflict || res.error));
+      refresh();
+    } finally {
+      setWriting(false);
+    }
   };
 
   return (
@@ -27,7 +37,7 @@ export function FocusView() {
 
       {conflict && (
         <div data-testid="focus-conflict" className="rounded-lg border border-over/40 bg-panel p-2 text-sm text-over">
-          changed on disk — refreshing…
+          couldn't save — refreshing from disk…
         </div>
       )}
 
@@ -46,21 +56,24 @@ export function FocusView() {
                 <button
                   data-testid="focus-complete"
                   onClick={() => void act(t, { state: 'done' })}
-                  className="rounded bg-panel2 px-2 py-0.5 text-good"
+                  disabled={writing}
+                  className="rounded bg-panel2 px-2 py-0.5 text-good disabled:opacity-40"
                 >
                   done
                 </button>
                 <button
                   data-testid="focus-toggle"
                   onClick={() => void act(t, { state: t.state === 'in_progress' ? 'open' : 'in_progress' })}
-                  className="rounded bg-panel2 px-2 py-0.5 text-accent"
+                  disabled={writing}
+                  className="rounded bg-panel2 px-2 py-0.5 text-accent disabled:opacity-40"
                 >
                   {t.state === 'in_progress' ? 'stop' : 'start'}
                 </button>
                 <button
                   data-testid="focus-archive"
                   onClick={() => void act(t, { state: 'cancelled' })}
-                  className="rounded bg-panel2 px-2 py-0.5 text-over"
+                  disabled={writing}
+                  className="rounded bg-panel2 px-2 py-0.5 text-over disabled:opacity-40"
                 >
                   archive
                 </button>

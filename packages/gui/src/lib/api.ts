@@ -92,11 +92,20 @@ export function shutdown(active: { estMinutes: number | null }[], now: Date) {
 export interface FocusData { date: string; active: ApiTask[]; doneToday: number; }
 export const fetchFocus = () => getJson<FocusData>('/api/focus');
 
-export async function postTask(body: unknown): Promise<{ ok?: true; conflict?: string; task?: ApiTask }> {
-  const res = await fetch('/api/task', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return res.json();
+export async function postTask(body: unknown): Promise<{ ok?: true; conflict?: string; task?: ApiTask; error?: string }> {
+  let res: Response;
+  try {
+    res = await fetch('/api/task', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return { error: 'network error' };
+  }
+  try {
+    return await res.json();
+  } catch {
+    return { error: `server error (${res.status})` };
+  }
 }

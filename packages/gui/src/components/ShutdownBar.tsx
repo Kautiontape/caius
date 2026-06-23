@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { shutdown } from '../lib/api';
 
 interface Props {
@@ -5,8 +6,14 @@ interface Props {
 }
 
 /** Live shutdown banner computed off the BROWSER clock: Σ estimates over the active
- * list → "≈ {h}h {m}m left → shutdown by {clock}", plus a "+N unestimated" note. */
+ * list → "≈ {h}h {m}m left → shutdown by {clock}", plus a "+N unestimated" note.
+ * Re-renders once a minute so the "shutdown by" clock doesn't freeze at mount. */
 export function ShutdownBar({ active }: Props) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
   const { remainingMin, unestimated, earliest } = shutdown(active, new Date());
   const h = Math.floor(remainingMin / 60);
   const m = remainingMin % 60;
