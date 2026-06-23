@@ -62,17 +62,13 @@ export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, 
       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-dim">
         {task.project && <span className="text-accent">{task.project}</span>}
         {onQuickEstimate ? (
-          <span className="relative">
+          <span className="inline-flex items-center gap-1">
             <button data-testid="quick-est" onClick={(e) => { e.stopPropagation(); setEstOpen((o) => !o); }}
               className={`underline decoration-dotted ${task.estMinutes == null ? 'text-warn' : ''}`}>{estLabel(task.estMinutes)} ▾</button>
-            {estOpen && (
-              <span className="absolute left-0 top-5 z-10 flex gap-1 rounded border border-line bg-panel p-1 shadow-lg">
-                {EST_CHIPS.map((m) => (
-                  <button key={m} data-testid={`est-chip-${m}`} onClick={(e) => { e.stopPropagation(); onQuickEstimate(m); setEstOpen(false); }}
-                    className="rounded px-1.5 py-0.5 text-ink hover:bg-panel2">{chipLabel(m)}</button>
-                ))}
-              </span>
-            )}
+            {estOpen && EST_CHIPS.map((m) => (
+              <button key={m} data-testid={`est-chip-${m}`} onClick={(e) => { e.stopPropagation(); onQuickEstimate(m); setEstOpen(false); }}
+                className="rounded border border-line px-1.5 py-0.5 text-ink hover:border-accent">{chipLabel(m)}</button>
+            ))}
           </span>
         ) : (
           <span className={task.estMinutes == null ? 'text-warn' : ''}>{estLabel(task.estMinutes)}</span>

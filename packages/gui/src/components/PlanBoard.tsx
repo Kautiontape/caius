@@ -68,6 +68,7 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
     void fetchTasksAtGrain(aimed, 'this').then(setMembers);
   };
   useEffect(refresh, [sourceTier, aimed]);
+  useEffect(() => { setSelected(new Set()); }, [sourceTier]);
 
   const archive = (t: UiTask) => postTask({ file: t.file, line: t.line, expectedText: t.text, patch: { state: 'cancelled' } });
   const archiveOne = async (t: UiTask) => { await archive(t); refresh(); };
