@@ -8,6 +8,7 @@ interface Props {
   actions?: ReactNode;
   showFile?: boolean;
   dragHandle?: ReactNode;
+  onEdit?: () => void;
 }
 
 function estLabel(min: number | null): string {
@@ -17,7 +18,7 @@ function estLabel(min: number | null): string {
   return `~${min}m`;
 }
 
-export function TaskCard({ task, staged, actions, showFile, dragHandle }: Props) {
+export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit }: Props) {
   const obsidian = useContext(ObsidianContext);
   return (
     <div
@@ -34,6 +35,15 @@ export function TaskCard({ task, staged, actions, showFile, dragHandle }: Props)
           {task.text || '(untitled)'}
         </div>
         {actions}
+        {onEdit && (
+          <button
+            data-testid="edit-open"
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="text-dim hover:text-accent text-sm"
+          >
+            ✎
+          </button>
+        )}
       </div>
       <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-dim">
         {task.project && <span className="text-accent">{task.project}</span>}

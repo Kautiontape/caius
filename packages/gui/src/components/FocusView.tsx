@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { fetchFocus, postTask, toUiTask, type ApiTask, type FocusData } from '../lib/api';
+import { fetchFocus, postTask, toUiTask, type ApiTask, type FocusData, type UiTask } from '../lib/api';
 import { TaskCard } from './TaskCard';
 import { ShutdownBar } from './ShutdownBar';
+import { EditModal } from './EditModal';
 
 /** Focus mode: today's doing-list. ShutdownBar at the top, a done-today tally, then
  * each active task as a card with live state writes (complete / start-stop / archive)
@@ -11,6 +12,7 @@ export function FocusView() {
   const [data, setData] = useState<FocusData>({ date: '', active: [], doneToday: 0 });
   const [conflict, setConflict] = useState(false);
   const [writing, setWriting] = useState(false);
+  const [editing, setEditing] = useState<UiTask | null>(null);
 
   const refresh = () => { void fetchFocus().then(setData); };
   useEffect(() => {
@@ -51,6 +53,7 @@ export function FocusView() {
             key={`${t.file}\n${t.line}`}
             task={toUiTask(t)}
             showFile
+            onEdit={() => setEditing(toUiTask(t))}
             actions={
               <div className="flex gap-1 text-xs">
                 <button
@@ -85,6 +88,8 @@ export function FocusView() {
           <div data-testid="focus-clear" className="text-xs italic text-dim">nothing on the list ✓</div>
         )}
       </div>
+
+      {editing && <EditModal task={editing} onClose={() => setEditing(null)} onSaved={refresh} />}
     </main>
   );
 }

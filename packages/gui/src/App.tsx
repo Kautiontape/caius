@@ -101,6 +101,7 @@ export function App() {
                 pending={buffer}
                 onStage={onStage}
                 onUnstage={onUnstage}
+                onChanged={() => { if (ritual.grain) void fetchReview(ritual.grain).then(setReview); }}
               />
             </div>
           )}

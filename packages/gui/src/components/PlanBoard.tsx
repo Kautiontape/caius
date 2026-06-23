@@ -18,6 +18,7 @@ import type { CommitResult } from '../lib/staging';
 import { SourceGroup } from './SourceGroup';
 import { HorizonBucket } from './HorizonBucket';
 import { TaskCard } from './TaskCard';
+import { EditModal } from './EditModal';
 
 interface Props {
   altitude: Altitude;
@@ -30,7 +31,7 @@ interface Props {
 }
 
 /** A draggable TaskCard: a grip handle activates the drag; the card follows the pointer. */
-function DraggableCard({ task, showFile, staged }: { task: UiTask; showFile?: boolean; staged?: boolean }) {
+function DraggableCard({ task, showFile, staged, onEdit }: { task: UiTask; showFile?: boolean; staged?: boolean; onEdit?: () => void }) {
   const { setNodeRef, listeners, attributes, transform, isDragging } = useDraggable({ id: task.id });
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -48,7 +49,7 @@ function DraggableCard({ task, showFile, staged }: { task: UiTask; showFile?: bo
   );
   return (
     <div ref={setNodeRef} style={style}>
-      <TaskCard task={task} showFile={showFile} staged={staged} dragHandle={handle} />
+      <TaskCard task={task} showFile={showFile} staged={staged} dragHandle={handle} onEdit={onEdit} />
     </div>
   );
 }
@@ -72,11 +73,13 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
   const [members, setMembers] = useState<Record<string, UiTask[]>>({ month: [], week: [], day: [] });
   const [dragging, setDragging] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(loadCollapsed);
+  const [editing, setEditing] = useState<UiTask | null>(null);
 
-  useEffect(() => { void fetchTasksAtGrain('someday').then(setSource); }, []);
-  useEffect(() => {
+  const refresh = () => {
+    void fetchTasksAtGrain('someday').then(setSource);
     for (const g of BUCKETS) void fetchTasksAtGrain(g, 'this').then((ts) => setMembers((m) => ({ ...m, [g]: ts })));
-  }, []);
+  };
+  useEffect(() => { refresh(); }, []);
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
@@ -166,7 +169,7 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
               group={group}
               collapsed={collapsed[group.key] !== false}
               onToggle={toggleGroup}
-              renderTask={(t) => <DraggableCard key={t.id} task={t} showFile />}
+              renderTask={(t) => <DraggableCard key={t.id} task={t} showFile onEdit={() => setEditing(t)} />}
             />
           ))}
         </SourceDroppable>
@@ -181,9 +184,9 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
               .map((c) => byId.get(c.taskId))
               .filter((t): t is UiTask => !!t);
             const cards = [
-              ...member.map((t) => <DraggableCard key={`m-${t.id}`} task={t} showFile />),
+              ...member.map((t) => <DraggableCard key={`m-${t.id}`} task={t} showFile onEdit={() => setEditing(t)} />),
               ...stagedTasks.map((t) => (
-                <DraggableCard key={`s-${t.id}`} task={t} staged showFile />
+                <DraggableCard key={`s-${t.id}`} task={t} staged showFile onEdit={() => setEditing(t)} />
               )),
             ];
             return (
@@ -208,6 +211,7 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
           <button data-testid="commit-button" disabled={Object.keys(buffer).length === 0} onClick={onCommit}
             className="rounded-lg bg-accent px-3 py-2 text-bg disabled:opacity-40">commit plan</button>
         </div>
+        {editing && <EditModal task={editing} onClose={() => setEditing(null)} onSaved={refresh} />}
       </section>
     </DndContext>
   );

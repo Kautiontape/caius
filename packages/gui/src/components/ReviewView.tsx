@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { RITUALS, GRAIN_LABEL, PREV_GRAIN, PERIOD_LABEL, type Altitude } from '../lib/grains';
 import type { UiTask } from '../lib/api';
 import type { PendingChange } from '../lib/staging';
 import { TaskCard } from './TaskCard';
+import { EditModal } from './EditModal';
 
 interface Props {
   altitude: Altitude;
@@ -10,9 +12,11 @@ interface Props {
   pending: Record<string, PendingChange>;
   onStage: (c: PendingChange) => void;
   onUnstage: (taskId: string) => void;
+  onChanged: () => void;
 }
 
-export function ReviewView({ altitude, done, open, pending, onStage, onUnstage }: Props) {
+export function ReviewView({ altitude, done, open, pending, onStage, onUnstage, onChanged }: Props) {
+  const [editing, setEditing] = useState<UiTask | null>(null);
   const ritual = RITUALS[altitude].review;
   const grain = ritual.grain!;
   const back = PREV_GRAIN[grain];
@@ -32,7 +36,7 @@ export function ReviewView({ altitude, done, open, pending, onStage, onUnstage }
       <div>
         <div className="mb-1.5 text-xs uppercase tracking-wide text-dim" data-testid="review-done">Completed ({done.length})</div>
         <div className="flex flex-col gap-1.5">
-          {done.map((t) => <TaskCard key={t.id} task={t} showFile />)}
+          {done.map((t) => <TaskCard key={t.id} task={t} showFile onEdit={() => setEditing(t)} />)}
           {done.length === 0 && <div className="text-xs italic text-dim">nothing completed yet</div>}
         </div>
       </div>
@@ -48,6 +52,7 @@ export function ReviewView({ altitude, done, open, pending, onStage, onUnstage }
                 task={t}
                 showFile
                 staged={staged}
+                onEdit={() => setEditing(t)}
                 actions={
                   staged ? (
                     <button data-testid="review-unstage" onClick={() => onUnstage(t.id)} className="text-dim hover:text-over text-sm">undo</button>
@@ -65,6 +70,8 @@ export function ReviewView({ altitude, done, open, pending, onStage, onUnstage }
           {open.length === 0 && <div className="text-xs italic text-dim" data-testid="review-clear">all clear ✓</div>}
         </div>
       </div>
+
+      {editing && <EditModal task={editing} onClose={() => setEditing(null)} onSaved={() => { onChanged(); }} />}
     </section>
   );
 }

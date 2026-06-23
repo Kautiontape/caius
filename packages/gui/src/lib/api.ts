@@ -12,6 +12,8 @@ export interface ApiTask {
   bucket: 'past' | 'this' | 'next' | 'future' | null;
   estMinutes: number | null;
   importance: number;
+  due: string | null;
+  notes: string[];
   state: string;
   live: boolean;
 }
@@ -27,6 +29,8 @@ export interface UiTask {
   slot: 'today' | 'tomorrow' | null;
   estMinutes: number | null;
   importance: number;
+  due: string | null;
+  notes: string[];
   inProgress: boolean;
   done: boolean;
 }
@@ -47,6 +51,8 @@ export function toUiTask(t: ApiTask): UiTask {
     slot,
     estMinutes: t.estMinutes,
     importance: t.importance,
+    due: t.due,
+    notes: t.notes ?? [],
     inProgress: t.state === 'in_progress',
     done: t.state === 'done' || t.state === 'cancelled',
   };
