@@ -9,6 +9,7 @@ interface Props {
   showFile?: boolean;
   dragHandle?: ReactNode;
   onEdit?: () => void;
+  onArchive?: () => void;
 }
 
 function estLabel(min: number | null): string {
@@ -18,7 +19,7 @@ function estLabel(min: number | null): string {
   return `~${min}m`;
 }
 
-export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit }: Props) {
+export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, onArchive }: Props) {
   const obsidian = useContext(ObsidianContext);
   return (
     <div
@@ -42,6 +43,16 @@ export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit }
             className="text-dim hover:text-accent text-sm"
           >
             ✎
+          </button>
+        )}
+        {onArchive && (
+          <button
+            data-testid="archive-task"
+            title="Archive (won't do)"
+            onClick={(e) => { e.stopPropagation(); onArchive(); }}
+            className="text-dim hover:text-over text-sm"
+          >
+            🗑
           </button>
         )}
       </div>

@@ -11,8 +11,8 @@ import {
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { BUCKETS, type Altitude, type Grain } from '../lib/grains';
-import { fetchTasksAtGrain, type UiTask } from '../lib/api';
-import { groupSource } from '../lib/grouping';
+import { fetchTasksAtGrain, postTask, type UiTask } from '../lib/api';
+import { groupSource, type SourceGroup as Group } from '../lib/grouping';
 import type { PendingChange, StagingBuffer } from '../lib/staging';
 import type { CommitResult } from '../lib/staging';
 import { SourceGroup } from './SourceGroup';
@@ -32,7 +32,7 @@ interface Props {
 }
 
 /** A draggable TaskCard: a grip handle activates the drag; the card follows the pointer. */
-function DraggableCard({ task, showFile, staged, onEdit }: { task: UiTask; showFile?: boolean; staged?: boolean; onEdit?: () => void }) {
+function DraggableCard({ task, showFile, staged, onEdit, onArchive }: { task: UiTask; showFile?: boolean; staged?: boolean; onEdit?: () => void; onArchive?: () => void }) {
   const { setNodeRef, listeners, attributes, transform, isDragging } = useDraggable({ id: task.id });
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -50,7 +50,7 @@ function DraggableCard({ task, showFile, staged, onEdit }: { task: UiTask; showF
   );
   return (
     <div ref={setNodeRef} style={style}>
-      <TaskCard task={task} showFile={showFile} staged={staged} dragHandle={handle} onEdit={onEdit} />
+      <TaskCard task={task} showFile={showFile} staged={staged} dragHandle={handle} onEdit={onEdit} onArchive={onArchive} />
     </div>
   );
 }
@@ -81,6 +81,20 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
     for (const g of BUCKETS) void fetchTasksAtGrain(g, 'this').then((ts) => setMembers((m) => ({ ...m, [g]: ts })));
   };
   useEffect(() => { refresh(); }, []);
+
+  // Archive = mark a task won't-do ([-] cancelled) via the in-place write endpoint.
+  const archive = (t: UiTask) =>
+    postTask({ file: t.file, line: t.line, expectedText: t.text, patch: { state: 'cancelled' } });
+  const archiveOne = async (t: UiTask) => { await archive(t); refresh(); };
+  // Archive-all is SEQUENTIAL: tasks in one document group share a file, and the
+  // write reconciles by re-reading that file each time — parallel writes to the
+  // same file would clobber each other. Cancelling leaves text/line stable, so
+  // each task's expectedText still matches after the prior archive.
+  const archiveAll = async (group: Group) => {
+    if (!window.confirm(`Archive all ${group.tasks.length} task(s) in "${group.title}" as won't-do?`)) return;
+    for (const t of group.tasks) await archive(t);
+    refresh();
+  };
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
@@ -174,7 +188,10 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
               group={group}
               collapsed={collapsed[group.key] !== false}
               onToggle={toggleGroup}
-              renderTask={(t) => <DraggableCard key={t.id} task={t} showFile onEdit={() => setEditing(t)} />}
+              onArchiveAll={archiveAll}
+              renderTask={(t) => (
+                <DraggableCard key={t.id} task={t} showFile onEdit={() => setEditing(t)} onArchive={() => void archiveOne(t)} />
+              )}
             />
           ))}
         </SourceDroppable>
@@ -189,7 +206,7 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
               .map((c) => byId.get(c.taskId))
               .filter((t): t is UiTask => !!t);
             const cards = [
-              ...member.map((t) => <DraggableCard key={`m-${t.id}`} task={t} showFile onEdit={() => setEditing(t)} />),
+              ...member.map((t) => <DraggableCard key={`m-${t.id}`} task={t} showFile onEdit={() => setEditing(t)} onArchive={() => void archiveOne(t)} />),
               ...stagedTasks.map((t) => (
                 <DraggableCard key={`s-${t.id}`} task={t} staged showFile onEdit={() => setEditing(t)} />
               )),
