@@ -115,3 +115,24 @@ export async function postTask(body: unknown): Promise<{ ok?: true; conflict?: s
     return { error: `server error (${res.status})` };
   }
 }
+
+/** Quick-add capture: append a brand-new task to the default capture note (or
+ * `note`). Returns `{ ok }` on success, or `{ error }` on a network/parse/4xx
+ * failure (the caller surfaces it inline). */
+export async function postCapture(text: string, note?: string): Promise<{ ok?: true; error?: string }> {
+  let res: Response;
+  try {
+    res = await fetch('/api/capture', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text, note }),
+    });
+  } catch {
+    return { error: 'network error' };
+  }
+  try {
+    return await res.json();
+  } catch {
+    return { error: `server error (${res.status})` };
+  }
+}

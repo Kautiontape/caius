@@ -12,7 +12,7 @@ import { DEFAULT_CONFIG, type Config } from '@caius/resolve';
 import type { State } from '@caius/core';
 import { funnel, filterTasks, reviewSplit, explain, flagsSummary, focus } from './query.js';
 import { reconcileCommit, type CommitChange } from './commit.js';
-import { handleTaskUpdate } from './task.js';
+import { handleTaskUpdate, handleCapture } from './task.js';
 
 export interface ServeOptions {
   root: string;
@@ -176,6 +176,21 @@ export function serveCaius(opts: ServeOptions): Promise<Server> {
           return json(res, out.body, out.status);
         })
         .catch((e) => json(res, { error: `task failed: ${String(e)}` }, 500));
+      return;
+    }
+    if (p === '/api/capture' && req.method === 'POST') {
+      void readBody(req)
+        .then((raw) => {
+          const out = handleCapture(opts.root, config, now, raw);
+          // Adopt the fresh scan so the new task surfaces immediately (the
+          // watcher will also re-scan — harmless/idempotent).
+          if (out.fresh) {
+            result = out.fresh;
+            opts.onRescan?.(result);
+          }
+          return json(res, out.body, out.status);
+        })
+        .catch((e) => json(res, { error: `capture failed: ${String(e)}` }, 500));
       return;
     }
     if (p.startsWith('/api/')) return json(res, { error: 'not found' }, 404);

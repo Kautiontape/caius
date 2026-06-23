@@ -19,6 +19,7 @@ import { SourceGroup } from './SourceGroup';
 import { HorizonBucket } from './HorizonBucket';
 import { TaskCard } from './TaskCard';
 import { EditModal } from './EditModal';
+import { QuickAdd } from './QuickAdd';
 
 interface Props {
   altitude: Altitude;
@@ -147,8 +148,12 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
   };
 
   return (
-    <DndContext sensors={sensors} onDragStart={() => setDragging(true)} onDragEnd={onDragEnd}>
-      <section data-testid="plan-board" className="grid grid-cols-[1.4fr_1fr] gap-5 p-5">
+    <>
+      <div className="px-5 pt-5">
+        <QuickAdd onCaptured={refresh} />
+      </div>
+      <DndContext sensors={sensors} onDragStart={() => setDragging(true)} onDragEnd={onDragEnd}>
+        <section data-testid="plan-board" className="grid grid-cols-[1.4fr_1fr] gap-5 px-5 pb-5 pt-3">
         <SourceDroppable>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs uppercase tracking-wide text-dim">Source · Someday backlog</span>
@@ -212,8 +217,9 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
             className="rounded-lg bg-accent px-3 py-2 text-bg disabled:opacity-40">commit plan</button>
         </div>
         {editing && <EditModal task={editing} onClose={() => setEditing(null)} onSaved={refresh} />}
-      </section>
-    </DndContext>
+        </section>
+      </DndContext>
+    </>
   );
 }
 

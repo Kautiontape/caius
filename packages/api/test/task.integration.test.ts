@@ -106,3 +106,28 @@ describe('POST /api/task (integration)', () => {
     expect(typeof body.conflict).toBe('string');
   });
 });
+
+const postCapture = (body: unknown) =>
+  fetch(server.url + '/api/capture', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+describe('POST /api/capture (integration)', () => {
+  it('appends a new open task to the given note and returns ok', async () => {
+    const note = '01 - Inbox/capture.md';
+    const res = await postCapture({ text: 'captured task ~20m', note });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+
+    const onDisk = readFileSync(join(root, note), 'utf8');
+    expect(onDisk).toContain('- [ ] captured task ~20m');
+  });
+
+  it('returns 400 on empty capture text', async () => {
+    const res = await postCapture({ text: '   ' });
+    expect(res.status).toBe(400);
+  });
+});

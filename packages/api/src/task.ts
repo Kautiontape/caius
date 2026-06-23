@@ -4,9 +4,9 @@
 // its in-memory index and return the freshly-read task. A line that moved or
 // changed underneath the request comes back as a 409 conflict with no write.
 
-import { applyTaskUpdate, type TaskPatch, type UpdateResult } from '@caius/write';
+import { applyTaskUpdate, appendTask, type TaskPatch, type UpdateResult } from '@caius/write';
 import { scanVault, type IndexedTask, type ScanResult } from '@caius/index';
-import type { Config } from '@caius/resolve';
+import { defaultCaptureNote, type Config } from '@caius/resolve';
 
 /** The result of handling a task update: an HTTP status, the JSON body, and —
  * only when a write landed — the fresh scan so the server can adopt it. */
@@ -68,6 +68,39 @@ export function handleTaskUpdate(root: string, config: Config, now: Date, raw: s
   const task: IndexedTask | null =
     fresh.tasks.find((t) => t.file === body.file && t.line === body.line) ?? null;
   return { status: 200, body: { ok: true, task }, fresh };
+}
+
+/**
+ * Quick-add capture (spec §B6): validate `{ text, note? }`, append a brand-new
+ * open task line via @caius/write, then re-scan so the new task surfaces. The
+ * target note defaults to today's daily note (created if missing) unless the
+ * request or config pins an explicit `note`. Returns 400 on a malformed body,
+ * 500 if the append throws, or 200 `{ ok }` with a `fresh` scan.
+ */
+export function handleCapture(root: string, config: Config, now: Date, raw: string): TaskUpdateOutcome {
+  let body: { text?: unknown; note?: unknown };
+  try {
+    body = JSON.parse(raw || '{}');
+  } catch {
+    return { status: 400, body: { error: 'invalid JSON body' } };
+  }
+
+  if (typeof body.text !== 'string' || body.text.trim() === '') {
+    return { status: 400, body: { error: 'capture text required' } };
+  }
+  if (body.note !== undefined && typeof body.note !== 'string') {
+    return { status: 400, body: { error: 'invalid note' } };
+  }
+
+  const note = body.note ?? config.captureNote ?? defaultCaptureNote(now);
+  try {
+    appendTask(root, { note, text: body.text });
+  } catch (err: unknown) {
+    return { status: 500, body: { error: `capture failed: ${String((err as Error).message ?? err)}` } };
+  }
+
+  const fresh = scanVault(root, config, now);
+  return { status: 200, body: { ok: true }, fresh };
 }
 
 const PATCH_STATES: ReadonlySet<string> = new Set(['open', 'in_progress', 'done', 'cancelled']);
