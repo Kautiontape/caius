@@ -1,7 +1,8 @@
-import { PIPELINE, GRAIN_LABEL, BUCKET_LABEL, type Grain } from '../lib/grains';
+import { PIPELINE, GRAIN_LABEL, BUCKET_LABEL, type Grain, type Altitude } from '../lib/grains';
 
 interface Props {
   byGrain: Record<string, number>;
+  altitude: Altitude;
   sourceTier: Grain;
   aimed: 'month' | 'week' | 'day';
   onAim: (t: 'month' | 'week' | 'day') => void;
@@ -11,13 +12,13 @@ interface Props {
 
 const isAimable = (g: Grain): g is 'month' | 'week' | 'day' => g === 'month' || g === 'week' || g === 'day';
 
-export function PipelineStrip({ byGrain, sourceTier, aimed, onAim, overdueCount, nowCount }: Props) {
+export function PipelineStrip({ byGrain, altitude, sourceTier, aimed, onAim, overdueCount, nowCount }: Props) {
   const lit = (g: Grain) => g === sourceTier || g === aimed;
   return (
     <div className="border-b border-line px-5 py-2 text-xs" data-testid="pipeline-strip">
       <div className="flex items-center gap-2">
         {PIPELINE.map((g, i) => {
-          const aimable = isAimable(g);
+          const aimable = isAimable(g) && PIPELINE.indexOf(g) >= PIPELINE.indexOf(altitude);
           return (
             <span key={g} className="flex items-center gap-2">
               {i > 0 && <span className="text-dim">→</span>}

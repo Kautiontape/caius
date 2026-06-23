@@ -68,6 +68,7 @@ export function App() {
       />
       <PipelineStrip
         byGrain={funnel?.byGrain ?? {}}
+        altitude={altitude}
         sourceTier={sourceTier}
         aimed={aimedTier}
         onAim={setAimedTier}
