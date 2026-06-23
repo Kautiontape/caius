@@ -53,10 +53,25 @@ function DraggableCard({ task, showFile, staged }: { task: UiTask; showFile?: bo
   );
 }
 
+const COLLAPSED_KEY = 'caius-collapsed';
+
+function loadCollapsed(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_KEY);
+    if (raw) return JSON.parse(raw) as Record<string, boolean>;
+  } catch { /* ignore */ }
+  return {};
+}
+
+function saveCollapsed(map: Record<string, boolean>) {
+  try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(map)); } catch { /* ignore */ }
+}
+
 export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstage, onCommit, conflicts }: Props) {
   const [source, setSource] = useState<UiTask[]>([]);
   const [members, setMembers] = useState<Record<string, UiTask[]>>({ month: [], week: [], day: [] });
   const [dragging, setDragging] = useState(false);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(loadCollapsed);
 
   useEffect(() => { void fetchTasksAtGrain('someday').then(setSource); }, []);
   useEffect(() => {
@@ -64,6 +79,16 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
   }, []);
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
+
+  const toggleGroup = (key: string) => {
+    setCollapsed((prev) => {
+      // missing or true → collapsed; false → expanded. First toggle expands.
+      const wasCollapsed = prev[key] !== false;
+      const next = { ...prev, [key]: !wasCollapsed };
+      saveCollapsed(next);
+      return next;
+    });
+  };
 
   // Combined lookup: a card dragged bucket→bucket is a member, not in `source`.
   const byId = new Map<string, UiTask>();
@@ -101,16 +126,46 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
   const unstaged = source.filter((t) => !buffer[t.id]);
   const estFor = (tasks: UiTask[]) => tasks.reduce((s, t) => s + (t.estMinutes ?? 0), 0);
 
+  const sourceGroups = groupSource(unstaged);
+  const anyExpanded = sourceGroups.some((g) => collapsed[g.key] === false);
+
+  const collapseAll = () => {
+    const next: Record<string, boolean> = {};
+    for (const g of sourceGroups) next[g.key] = true;
+    saveCollapsed(next);
+    setCollapsed(next);
+  };
+
+  const expandAll = () => {
+    const next: Record<string, boolean> = {};
+    for (const g of sourceGroups) next[g.key] = false;
+    saveCollapsed(next);
+    setCollapsed(next);
+  };
+
   return (
     <DndContext sensors={sensors} onDragStart={() => setDragging(true)} onDragEnd={onDragEnd}>
       <section data-testid="plan-board" className="grid grid-cols-[1.4fr_1fr] gap-5 p-5">
         <SourceDroppable>
-          <div className="mb-2 text-xs uppercase tracking-wide text-dim">Source · Someday backlog</div>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wide text-dim">Source · Someday backlog</span>
+            {sourceGroups.length > 0 && (
+              <button
+                data-testid="collapse-all"
+                onClick={anyExpanded ? collapseAll : expandAll}
+                className="text-xs text-dim hover:text-ink"
+              >
+                {anyExpanded ? 'Collapse all' : 'Expand all'}
+              </button>
+            )}
+          </div>
           {unstaged.length === 0 && <div className="italic text-dim" data-testid="source-empty">Someday is empty.</div>}
-          {groupSource(unstaged).map((group) => (
+          {sourceGroups.map((group) => (
             <SourceGroup
               key={group.key}
               group={group}
+              collapsed={collapsed[group.key] !== false}
+              onToggle={toggleGroup}
               renderTask={(t) => <DraggableCard key={t.id} task={t} showFile />}
             />
           ))}

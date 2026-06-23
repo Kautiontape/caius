@@ -1,22 +1,22 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { SourceGroup as Group } from '../lib/grouping';
 
-const KEY = (k: string) => `caius-collapsed:${k}`;
-
-export function SourceGroup({ group, renderTask }: { group: Group; renderTask: (t: Group['tasks'][number]) => ReactNode }) {
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    try { return localStorage.getItem(KEY(group.key)) === '1'; } catch { return false; }
-  });
-  const toggle = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    try { localStorage.setItem(KEY(group.key), next ? '1' : '0'); } catch { /* ignore */ }
-  };
+export function SourceGroup({
+  group,
+  collapsed,
+  onToggle,
+  renderTask,
+}: {
+  group: Group;
+  collapsed: boolean;
+  onToggle: (key: string) => void;
+  renderTask: (t: Group['tasks'][number]) => ReactNode;
+}) {
   const icon = group.kind === 'project' ? '\u{1F4C1}' : '\u{1F4C4}';
   return (
     <div data-testid="source-group">
       <button
-        onClick={toggle}
+        onClick={() => onToggle(group.key)}
         data-testid={`group-toggle-${group.key}`}
         className="mb-1.5 flex w-full items-center gap-1 text-xs uppercase tracking-wide text-dim"
       >
