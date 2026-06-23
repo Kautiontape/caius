@@ -12,6 +12,8 @@ interface Props {
   sourceTabs: Grain[];
   onAimSource: (t: Grain) => void;
   label?: string;
+  overdue?: boolean;
+  defaultExpanded: boolean;
   groups: Group[];
   toolbar?: ReactNode;
   collapsed: Record<string, boolean>;
@@ -27,14 +29,16 @@ interface Props {
  * virtualized (padding-spacer pattern) so a huge backlog renders only visible rows
  * while drag-and-drop still works (no per-row transforms). The whole column is the
  * 'source' drop target (drop a staged card here to un-stage). */
-export function SourceColumn({ sourceTier, sourceTabs, onAimSource, label, groups, toolbar, collapsed, anyExpanded, onToggle, onCollapseAll, onExpandAll, onArchiveAll, renderTask }: Props) {
+export function SourceColumn({ sourceTier, sourceTabs, onAimSource, label, overdue, defaultExpanded, groups, toolbar, collapsed, anyExpanded, onToggle, onCollapseAll, onExpandAll, onArchiveAll, renderTask }: Props) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: 'source' });
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const isCollapsed = (key: string) => (collapsed[key] === undefined ? !defaultExpanded : collapsed[key]);
 
   const rows: Row[] = [];
   for (const group of groups) {
     rows.push({ kind: 'header', group });
-    if (collapsed[group.key] === false) for (const task of group.tasks) rows.push({ kind: 'task', task });
+    if (!isCollapsed(group.key)) for (const task of group.tasks) rows.push({ kind: 'task', task });
   }
 
   const virtualizer = useVirtualizer({
@@ -51,10 +55,10 @@ export function SourceColumn({ sourceTier, sourceTabs, onAimSource, label, group
 
   return (
     <div ref={setDropRef} data-testid="source"
-      className={`flex max-h-[calc(100vh-170px)] flex-col rounded-lg border bg-panel p-3 shadow-sm transition-all ${isOver ? 'border-accent ring-2 ring-accent/50' : 'border-line'}`}>
+      className={`flex max-h-[calc(100vh-170px)] flex-col rounded-lg border bg-panel p-3 shadow-sm transition-all ${isOver ? 'border-accent ring-2 ring-accent/50' : overdue ? 'border-over ring-1 ring-over/40' : 'border-line'}`}>
       <div className="mb-2 flex items-center justify-between">
         {label ? (
-          <span className="text-xs uppercase tracking-wide text-dim">{label}</span>
+          <span className={`text-xs uppercase tracking-wide ${overdue ? 'font-bold text-over' : 'text-dim'}`}>{label}</span>
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-wide text-dim">Source</span>
@@ -83,7 +87,7 @@ export function SourceColumn({ sourceTier, sourceTabs, onAimSource, label, group
             return (
               <div key={vi.key} data-index={vi.index} ref={virtualizer.measureElement}>
                 {row.kind === 'header'
-                  ? <GroupHeader group={row.group} collapsed={collapsed[row.group.key] !== false} onToggle={onToggle} onArchiveAll={onArchiveAll} />
+                  ? <GroupHeader group={row.group} collapsed={isCollapsed(row.group.key)} onToggle={onToggle} onArchiveAll={onArchiveAll} />
                   : <div className="pb-1.5">{renderTask(row.task)}</div>}
               </div>
             );
@@ -103,7 +107,7 @@ function GroupHeader({ group, collapsed, onToggle, onArchiveAll }: { group: Grou
         <span className="ml-1 normal-case">({group.tasks.length})</span>
       </button>
       {group.tasks.length > 0 && (
-        <button data-testid={`group-archive-${group.key}`} title={`Archive all ${group.tasks.length} (won't do)`} onClick={() => onArchiveAll(group)} className="normal-case text-dim hover:text-over">🗑 all</button>
+        <button data-testid={`group-archive-${group.key}`} title={`Archive all ${group.tasks.length} (won't do)`} onClick={() => onArchiveAll(group)} className="normal-case text-dim hover:text-over">🗃 all</button>
       )}
     </div>
   );

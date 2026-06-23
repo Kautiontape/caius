@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, useDraggable,
+  DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useSensors, useDraggable,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { type Altitude, type Grain, destTiersForGrain } from '../lib/grains';
 import { fetchTasksAtGrain, fetchOverdue, postTask, type UiTask } from '../lib/api';
 import { daysLate } from '../lib/dates';
@@ -44,8 +43,8 @@ type CardProps = {
   daysLate?: number; onReschedule?: (date: string) => void;
 };
 function DraggableCard(p: CardProps) {
-  const { setNodeRef, listeners, attributes, transform, isDragging } = useDraggable({ id: p.task.id });
-  const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : undefined };
+  const { setNodeRef, listeners, attributes, isDragging } = useDraggable({ id: p.task.id });
+  const style = { opacity: isDragging ? 0.4 : undefined };
   const handle = <button {...listeners} {...attributes} aria-label="drag" className="cursor-grab touch-none select-none text-dim hover:text-ink">⠿</button>;
   return <div ref={setNodeRef} style={style}><TaskCard {...p} dragHandle={handle} /></div>;
 }
@@ -58,6 +57,7 @@ export function PlanBoard({ altitude, sourceTier, sourceTabs, onAimSource, aimed
   const [source, setSource] = useState<UiTask[]>([]);
   const [members, setMembers] = useState<UiTask[]>([]);
   const [dragging, setDragging] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(loadCollapsed);
   const [editing, setEditing] = useState<UiTask | null>(null);
   const [confirmSummary, setConfirmSummary] = useState<CommitSummary | null>(null);
@@ -97,6 +97,7 @@ export function PlanBoard({ altitude, sourceTier, sourceTabs, onAimSource, aimed
 
   const onDragEnd = (e: DragEndEvent) => {
     setDragging(false);
+    setActiveId(null);
     const taskId = String(e.active.id);
     const over = e.over ? String(e.over.id) : null;
     if (!over) return;
@@ -120,6 +121,7 @@ export function PlanBoard({ altitude, sourceTier, sourceTabs, onAimSource, aimed
   const meter = capacityMeter([...members, ...stagedTasks], tierBudgetMinutes(aimed, capacityMinutes));
 
   const today = new Date().toISOString().slice(0, 10);
+  const defaultExpanded = source.length < 50;
   const filtered = filterTasks(unstaged, filters, today);
   const sortedGroups = groupSource(filtered).map((g) => ({ ...g, tasks: sortTasks(g.tasks, sort) }));
   const projects = [...new Set(unstaged.map((t) => t.project).filter((p): p is string => !!p))].sort();
@@ -131,7 +133,8 @@ export function PlanBoard({ altitude, sourceTier, sourceTabs, onAimSource, aimed
   const bulkEstimate = async (min: number) => { for (const t of selectedTasks()) await postTask({ file: t.file, line: t.line, expectedText: t.text, patch: { estMinutes: min } }); clearSel(); refresh(); };
   const bulkArchive = async () => { if (!window.confirm(`Archive ${selected.size} selected task(s) as won't-do?`)) return; for (const t of selectedTasks()) await archive(t); clearSel(); refresh(); };
 
-  const anyExpanded = Object.values(collapsed).some((v) => v === false);
+  const isCollapsed = (key: string) => (collapsed[key] === undefined ? !defaultExpanded : collapsed[key]);
+  const anyExpanded = sortedGroups.some((g) => !isCollapsed(g.key));
   const setAll = (val: boolean) => { const next: Record<string, boolean> = {}; for (const t of unstaged) next[t.project ? `project:${t.project}` : `doc:${t.file}`] = val; saveCollapsed(next); setCollapsed(next); };
 
   const cards = [
@@ -142,13 +145,18 @@ export function PlanBoard({ altitude, sourceTier, sourceTabs, onAimSource, aimed
   return (
     <>
       <div className="px-5 pt-5"><QuickAdd onCaptured={refresh} /></div>
-      <DndContext sensors={sensors} onDragStart={() => setDragging(true)} onDragEnd={onDragEnd}>
+      <DndContext sensors={sensors}
+        onDragStart={(e) => { setDragging(true); setActiveId(String(e.active.id)); }}
+        onDragCancel={() => { setDragging(false); setActiveId(null); }}
+        onDragEnd={onDragEnd}>
         <section data-testid="plan-board" className="grid grid-cols-[1.4fr_1fr] gap-5 px-5 pb-5 pt-3">
           <SourceColumn
             sourceTier={sourceTier}
             sourceTabs={sourceTabs}
             onAimSource={onAimSource}
-            label={overdueActive ? '⚠ Overdue' : undefined}
+            label={overdueActive ? '⚠ OVERDUE' : undefined}
+            overdue={overdueActive}
+            defaultExpanded={defaultExpanded}
             groups={sortedGroups}
             toolbar={<SourceToolbar filters={filters} onFilters={setFilters} sort={sort} onSort={setSort} projects={projects} selectMode={selectMode} onToggleSelectMode={() => { setSelectMode((m) => !m); clearSel(); }} />}
             collapsed={collapsed}
@@ -196,6 +204,9 @@ export function PlanBoard({ altitude, sourceTier, sourceTabs, onAimSource, aimed
             <div data-testid="commit-toast" className={`fixed bottom-5 left-1/2 -translate-x-1/2 rounded-lg border bg-panel px-4 py-2 text-sm shadow-lg ${toast.ok ? 'border-good/40 text-good' : 'border-over/40 text-over'}`}>{toast.msg}</div>
           )}
         </section>
+        <DragOverlay>
+          {activeId && byId.get(activeId) ? <TaskCard task={byId.get(activeId)!} showFile /> : null}
+        </DragOverlay>
       </DndContext>
     </>
   );

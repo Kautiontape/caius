@@ -58,7 +58,7 @@ export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, 
           <button data-testid="edit-open" onClick={(e) => { e.stopPropagation(); onEdit(); }} className="text-sm text-dim hover:text-accent">✎</button>
         )}
         {onArchive && (
-          <button data-testid="archive-task" title="Archive (won't do)" onClick={(e) => { e.stopPropagation(); onArchive(); }} className="text-sm text-dim hover:text-over">🗑</button>
+          <button data-testid="archive-task" title="Archive (won't do)" onClick={(e) => { e.stopPropagation(); onArchive(); }} className="text-sm text-dim hover:text-over">🗃</button>
         )}
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-dim">
