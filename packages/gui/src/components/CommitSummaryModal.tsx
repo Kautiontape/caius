@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { CommitSummary } from '../lib/commitSummary';
 
 /** Pre-commit confirmation: shows exactly what will be committed and to which
@@ -5,10 +6,16 @@ import type { CommitSummary } from '../lib/commitSummary';
  * confirmation UX and becomes the write preview when write-back lands.) */
 export function CommitSummaryModal({
   summary, onConfirm, onCancel,
-}: { summary: CommitSummary; onConfirm: () => void; onCancel: () => void }) {
+}: { summary: CommitSummary; onConfirm: () => void | Promise<void>; onCancel: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" data-testid="commit-summary">
-      <div className="w-[min(440px,92vw)] rounded-xl border border-line bg-panel p-5 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" data-testid="commit-summary" onClick={onCancel}>
+      <div className="w-[min(440px,92vw)] rounded-xl border border-line bg-panel p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h2 className="mb-3 text-sm font-semibold text-ink">
           Commit {summary.total} change{summary.total === 1 ? '' : 's'}?
         </h2>

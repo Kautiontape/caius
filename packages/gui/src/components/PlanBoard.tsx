@@ -20,7 +20,7 @@ import { HorizonBucket } from './HorizonBucket';
 import { TaskCard } from './TaskCard';
 import { EditModal } from './EditModal';
 import { QuickAdd } from './QuickAdd';
-import { summarizeBuffer } from '../lib/commitSummary';
+import { summarizeBuffer, type CommitSummary } from '../lib/commitSummary';
 import { CommitSummaryModal } from './CommitSummaryModal';
 
 interface Props {
@@ -77,8 +77,9 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
   const [dragging, setDragging] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(loadCollapsed);
   const [editing, setEditing] = useState<UiTask | null>(null);
-  const [confirming, setConfirming] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [confirmSummary, setConfirmSummary] = useState<CommitSummary | null>(null);
+  const [committing, setCommitting] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const refresh = () => {
     void fetchTasksAtGrain('someday').then(setSource);
@@ -234,28 +235,38 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
               {conflicts.length} conflict(s) kept staged.
             </div>
           )}
-          <button data-testid="commit-button" disabled={Object.keys(buffer).length === 0} onClick={() => setConfirming(true)}
+          <button data-testid="commit-button" disabled={Object.keys(buffer).length === 0 || committing}
+            onClick={() => setConfirmSummary(summarizeBuffer(buffer))}
             className="rounded-lg bg-accent px-3 py-2 text-bg disabled:opacity-40">commit plan</button>
         </div>
         {editing && <EditModal task={editing} onClose={() => setEditing(null)} onSaved={refresh} />}
-        {confirming && (
+        {confirmSummary && (
           <CommitSummaryModal
-            summary={summarizeBuffer(buffer)}
-            onCancel={() => setConfirming(false)}
+            summary={confirmSummary}
+            onCancel={() => setConfirmSummary(null)}
             onConfirm={async () => {
-              setConfirming(false);
-              const res = await onCommit();
-              const msg = `✓ Committed ${res.applied.length} change${res.applied.length === 1 ? '' : 's'}`
-                + (res.conflicts.length ? ` · ${res.conflicts.length} conflict(s) kept` : '');
-              setToast(msg);
-              setTimeout(() => setToast(null), 2600);
+              setConfirmSummary(null);
+              setCommitting(true);
+              try {
+                const res = await onCommit();
+                setToast({
+                  msg: `✓ Committed ${res.applied.length} change${res.applied.length === 1 ? '' : 's'}`
+                    + (res.conflicts.length ? ` · ${res.conflicts.length} conflict(s) kept` : ''),
+                  ok: true,
+                });
+              } catch {
+                setToast({ msg: '⚠ Commit failed — check the server and try again.', ok: false });
+              } finally {
+                setCommitting(false);
+                setTimeout(() => setToast(null), 3000);
+              }
             }}
           />
         )}
         {toast && (
           <div data-testid="commit-toast"
-            className="fixed bottom-5 left-1/2 -translate-x-1/2 rounded-lg border border-good/40 bg-panel px-4 py-2 text-sm text-good shadow-lg">
-            {toast}
+            className={`fixed bottom-5 left-1/2 -translate-x-1/2 rounded-lg border bg-panel px-4 py-2 text-sm shadow-lg ${toast.ok ? 'border-good/40 text-good' : 'border-over/40 text-over'}`}>
+            {toast.msg}
           </div>
         )}
         </section>

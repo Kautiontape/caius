@@ -23,4 +23,11 @@ describe('summarizeBuffer', () => {
   it('is empty for an empty buffer', () => {
     expect(summarizeBuffer({})).toEqual({ total: 0, rows: [], byTier: [] });
   });
+
+  it('passes the change kind through (not just promote)', () => {
+    const buf: StagingBuffer = {
+      a: { ...change('a', 'month', 'Review draft'), kind: 'defer' },
+    };
+    expect(summarizeBuffer(buf).rows[0].kind).toBe('defer');
+  });
 });
