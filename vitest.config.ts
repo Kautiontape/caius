@@ -14,6 +14,7 @@ export default defineConfig({
       '@caius/index': src('./packages/index/src/index.ts'),
       '@caius/watch': src('./packages/watch/src/index.ts'),
       '@caius/api': src('./packages/api/src/index.ts'),
+      '@caius/write': src('./packages/write/src/index.ts'),
     },
   },
 });

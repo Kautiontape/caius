@@ -13,8 +13,9 @@
 //   5. write a temp file in the SAME directory, then renameSync over the target
 //      (atomic on a single filesystem — never a partially written note).
 
-import { readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { parseTaskLine, renderTaskLine, type State, type TaskLine, type Token } from '@caius/core';
 
 /** A typed, partial mutation of a single task. Omitted fields are left as-is;
@@ -85,6 +86,8 @@ export function applyPatch(parsed: TaskLine, patch: TaskPatch): TaskLine {
   }
 
   if (patch.text !== undefined) {
+    // text is not a trailing token; renderTaskLine always emits t.text directly,
+    // so there is no `changed` flag to set here.
     next.text = patch.text;
   }
 
@@ -163,15 +166,19 @@ function upsertToken<K extends Token['kind']>(
 }
 
 /**
- * Replace the task's contiguous indented note block with `description`.
+ * Replace the task's indented note block with `description`.
  *
- * The note block is the run of lines immediately after `taskLineIdx` that
- * "belong" to the task: each is non-empty, indented strictly more than the task,
- * and is itself NOT a task line. The run stops at the first empty line, a dedent
- * to ≤ the task's indent, a child/sibling task line, or EOF — so a nested
- * `- [ ] child` ends (and is preserved past) the block. The matched lines are
- * spliced out and the new description is inserted, each line re-indented to the
- * task's indent + two spaces. An empty `description` simply removes the block.
+ * The note block is the run of lines after `taskLineIdx` that "belong" to the
+ * task. Mirroring parseDocument (which collects a task's notes ACROSS blank
+ * lines — "blank lines never break a block"), a BLANK line is transparent: it
+ * neither terminates the block nor extends it on its own. The block terminates
+ * at a dedent (a non-blank line whose leading whitespace ≤ the task's indent), a
+ * task line (a nested/sibling `- [ ] …`), or EOF. The replaced range runs from
+ * the line after the task up to and including the LAST qualifying note line, so
+ * interior blanks BETWEEN notes are replaced, but a TRAILING blank (between the
+ * last note and a terminator/EOF) is NOT consumed. The matched lines are spliced
+ * out and the new description inserted, each line re-indented to the task's
+ * indent + two spaces. An empty `description` simply removes the block.
  */
 export function replaceNoteBlock(
   lines: string[],
@@ -181,14 +188,16 @@ export function replaceNoteBlock(
 ): void {
   const taskIndent = indentText.length;
 
-  let end = taskLineIdx + 1;
-  while (end < lines.length) {
-    const line = lines[end]!;
-    if (line.trim() === '') break; // empty line ends the block
+  let end = taskLineIdx + 1; // exclusive end of the block to replace (last note line + 1)
+  let i = taskLineIdx + 1;
+  while (i < lines.length) {
+    const line = lines[i]!;
+    if (line.trim() === '') { i++; continue; }       // blank: transparent, not yet part of the block
     const leading = line.length - line.trimStart().length;
-    if (leading <= taskIndent) break; // dedent to/under the task ends the block
-    if (parseTaskLine(line) !== null) break; // a nested task line ends the block
-    end++;
+    if (leading <= taskIndent) break;                 // dedent to/under the task ends the block
+    if (parseTaskLine(line) !== null) break;          // a nested/sibling task line ends the block
+    i++;
+    end = i;                                           // extend the block through this note line
   }
 
   const replacement =
@@ -202,7 +211,12 @@ export function replaceNoteBlock(
  * reader of `abs` only ever sees the old file or the fully-written new one.
  */
 function atomicWrite(abs: string, content: string): void {
-  const tmp = join(dirname(abs), `.${basename(abs)}.${process.pid}.tmp`);
+  const tmp = join(dirname(abs), `.${basename(abs)}.${randomBytes(6).toString('hex')}.tmp`);
   writeFileSync(tmp, content, 'utf8');
-  renameSync(tmp, abs);
+  try {
+    renameSync(tmp, abs);
+  } catch (err) {
+    try { unlinkSync(tmp); } catch { /* best effort cleanup */ }
+    throw err;
+  }
 }

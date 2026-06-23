@@ -54,6 +54,30 @@ describe('applyTaskUpdate', () => {
     expect(readFileSync(abs, 'utf8')).toBe('- [ ] parent\n  new note\n  - [ ] child\n');
   });
 
+  it('replaces a note block spanning an interior blank line, preserving the sibling task', () => {
+    const abs = setup('- [ ] parent\n  note one\n\n  note two\n- [ ] sibling\n');
+    const r = applyTaskUpdate(root, {
+      file: 'note.md',
+      line: 0,
+      expectedText: 'parent',
+      patch: { description: 'X' },
+    });
+    expect(r.ok).toBe(true);
+    expect(readFileSync(abs, 'utf8')).toBe('- [ ] parent\n  X\n- [ ] sibling\n');
+  });
+
+  it('does not consume a trailing blank or a top-level paragraph after the note block', () => {
+    const abs = setup('- [ ] parent\n  note one\n\ntop level prose\n');
+    const r = applyTaskUpdate(root, {
+      file: 'note.md',
+      line: 0,
+      expectedText: 'parent',
+      patch: { description: 'X' },
+    });
+    expect(r.ok).toBe(true);
+    expect(readFileSync(abs, 'utf8')).toBe('- [ ] parent\n  X\n\ntop level prose\n');
+  });
+
   // --- edge cases: add / change / clear each token field ---
 
   it('adds an estimate token', () => {
