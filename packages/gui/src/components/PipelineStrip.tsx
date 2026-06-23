@@ -8,11 +8,13 @@ interface Props {
   onAim: (t: 'month' | 'week' | 'day') => void;
   overdueCount: number;
   nowCount: number;
+  overdueActive: boolean;
+  onAimOverdue: () => void;
 }
 
 const isAimable = (g: Grain): g is 'month' | 'week' | 'day' => g === 'month' || g === 'week' || g === 'day';
 
-export function PipelineStrip({ byGrain, altitude, sourceTier, aimed, onAim, overdueCount, nowCount }: Props) {
+export function PipelineStrip({ byGrain, altitude, sourceTier, aimed, onAim, overdueCount, nowCount, overdueActive, onAimOverdue }: Props) {
   const lit = (g: Grain) => g === sourceTier || g === aimed;
   return (
     <div className="border-b border-line px-5 py-2 text-xs" data-testid="pipeline-strip">
@@ -31,11 +33,16 @@ export function PipelineStrip({ byGrain, altitude, sourceTier, aimed, onAim, ove
         })}
         <span className="ml-auto flex gap-3">
           <span className="text-good" data-testid="now-count">now {nowCount}</span>
-          <span className="text-over" data-testid="overdue-count">overdue {overdueCount}</span>
+          <button data-testid="overdue-count" onClick={onAimOverdue}
+            className={`rounded px-2 py-1 ${overdueActive ? 'bg-over text-bg' : altitude === 'day' ? 'text-over ring-1 ring-over/50' : 'text-over'}`}>
+            ⚠ overdue {overdueCount}
+          </button>
         </span>
       </div>
       <div data-testid="ambient-caption" className="mt-1 text-[11px] text-dim">
-        Pulling <span className="text-ink">{GRAIN_LABEL[sourceTier]}</span> → <span className="text-ink">{BUCKET_LABEL[aimed]}</span>
+        {overdueActive
+          ? <>Triaging <span className="text-over">⚠ overdue</span> → <span className="text-ink">{BUCKET_LABEL[aimed]}</span></>
+          : <>Pulling <span className="text-ink">{GRAIN_LABEL[sourceTier]}</span> → <span className="text-ink">{BUCKET_LABEL[aimed]}</span></>}
       </div>
     </div>
   );

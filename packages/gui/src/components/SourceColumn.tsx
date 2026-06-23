@@ -6,6 +6,7 @@ import { SourceGroup } from './SourceGroup';
 
 interface Props {
   sourceTier: Grain;
+  label?: string;
   groups: Group[];
   toolbar?: ReactNode;
   collapsed: Record<string, boolean>;
@@ -19,12 +20,12 @@ interface Props {
 
 /** Anchored left column: the grain's source tier as collapsible groups (already
  * filtered/sorted by the caller). Droppable — dropping a staged card here un-stages it. */
-export function SourceColumn({ sourceTier, groups, toolbar, collapsed, anyExpanded, onToggle, onCollapseAll, onExpandAll, onArchiveAll, renderTask }: Props) {
+export function SourceColumn({ sourceTier, label, groups, toolbar, collapsed, anyExpanded, onToggle, onCollapseAll, onExpandAll, onArchiveAll, renderTask }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: 'source' });
   return (
     <div ref={setNodeRef} data-testid="source" className={`flex flex-col rounded-lg border bg-panel p-3 shadow-sm transition-all ${isOver ? 'border-accent ring-2 ring-accent/50' : 'border-line'}`}>
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wide text-dim">Source · {GRAIN_LABEL[sourceTier]}</span>
+        <span className="text-xs uppercase tracking-wide text-dim">{label ?? `Source · ${GRAIN_LABEL[sourceTier]}`}</span>
         {groups.length > 0 && (
           <button data-testid="collapse-all" onClick={anyExpanded ? onCollapseAll : onExpandAll} className="text-xs text-dim hover:text-ink">{anyExpanded ? 'Collapse all' : 'Expand all'}</button>
         )}

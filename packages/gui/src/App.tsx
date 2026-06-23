@@ -16,6 +16,7 @@ import { FocusView } from './components/FocusView';
 export function App() {
   const [altitude, setAltitude] = useState<Altitude>('day');
   const [aimedTier, setAimedTier] = useState<'month' | 'week' | 'day'>('day');
+  const [overdueActive, setOverdueActive] = useState(false);
   const [posture, setPosture] = useState<Posture>('plan');
   const [mode, setMode] = useState<'plan' | 'focus'>('plan');
 
@@ -62,7 +63,7 @@ export function App() {
         altitude={altitude}
         posture={posture}
         mode={mode}
-        onGrain={(a) => { setAltitude(a); setAimedTier(a); }}
+        onGrain={(a) => { setAltitude(a); setAimedTier(a); setOverdueActive(false); }}
         onPosture={setPosture}
         onMode={setMode}
       />
@@ -74,6 +75,8 @@ export function App() {
         onAim={setAimedTier}
         overdueCount={overdue.length}
         nowCount={funnel?.now.length ?? 0}
+        overdueActive={overdueActive}
+        onAimOverdue={() => setOverdueActive((v) => !v)}
       />
       {mode === 'focus' ? (
         <FocusView />
@@ -91,6 +94,7 @@ export function App() {
               onUnstage={onUnstage}
               onCommit={onCommit}
               conflicts={conflicts}
+              overdueActive={overdueActive}
             />
           )}
           {posture === 'review' && (

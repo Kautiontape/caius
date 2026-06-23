@@ -5,7 +5,8 @@ import {
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { type Altitude, type Grain, destTiersForGrain } from '../lib/grains';
-import { fetchTasksAtGrain, postTask, type UiTask } from '../lib/api';
+import { fetchTasksAtGrain, fetchOverdue, postTask, type UiTask } from '../lib/api';
+import { daysLate } from '../lib/dates';
 import { tierBudgetMinutes, capacityMeter } from '../lib/capacity';
 import { groupSource, type SourceGroup as Group } from '../lib/grouping';
 import { filterTasks, sortTasks, EMPTY_FILTERS, type SourceFilters, type SortKey } from '../lib/sourceFilter';
@@ -31,12 +32,14 @@ interface Props {
   onUnstage: (taskId: string) => void;
   onCommit: () => Promise<CommitResult>;
   conflicts: CommitResult['conflicts'];
+  overdueActive: boolean;
 }
 
 type CardProps = {
   task: UiTask; showFile?: boolean; staged?: boolean;
   onEdit?: () => void; onArchive?: () => void; onPromote?: () => void;
   onQuickEstimate?: (m: number) => void; selectable?: boolean; selected?: boolean; onToggleSelect?: () => void;
+  daysLate?: number; onReschedule?: (date: string) => void;
 };
 function DraggableCard(p: CardProps) {
   const { setNodeRef, listeners, attributes, transform, isDragging } = useDraggable({ id: p.task.id });
@@ -49,7 +52,7 @@ const COLLAPSED_KEY = 'caius-collapsed';
 const loadCollapsed = (): Record<string, boolean> => { try { const r = localStorage.getItem(COLLAPSED_KEY); if (r) return JSON.parse(r) as Record<string, boolean>; } catch { /* ignore */ } return {}; };
 const saveCollapsed = (m: Record<string, boolean>) => { try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(m)); } catch { /* ignore */ } };
 
-export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes, buffer, onStage, onUnstage, onCommit, conflicts }: Props) {
+export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes, buffer, onStage, onUnstage, onCommit, conflicts, overdueActive }: Props) {
   const [source, setSource] = useState<UiTask[]>([]);
   const [members, setMembers] = useState<UiTask[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -64,11 +67,11 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const refresh = () => {
-    void fetchTasksAtGrain(sourceTier).then(setSource);
+    void (overdueActive ? fetchOverdue() : fetchTasksAtGrain(sourceTier)).then(setSource);
     void fetchTasksAtGrain(aimed, 'this').then(setMembers);
   };
-  useEffect(refresh, [sourceTier, aimed]);
-  useEffect(() => { setSelected(new Set()); }, [sourceTier]);
+  useEffect(refresh, [sourceTier, aimed, overdueActive]);
+  useEffect(() => { setSelected(new Set()); }, [sourceTier, overdueActive]);
 
   const archive = (t: UiTask) => postTask({ file: t.file, line: t.line, expectedText: t.text, patch: { state: 'cancelled' } });
   const archiveOne = async (t: UiTask) => { await archive(t); refresh(); };
@@ -108,6 +111,7 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
 
   const promoteOne = (t: UiTask) => onStage({ taskId: t.id, fromGrain: t.grain ?? sourceTier, toGrain: aimed, toBucket: 'this', slot: aimed === 'day' ? 'today' : undefined, kind: 'promote', snapshot: { file: t.file, line: t.line, text: t.text } });
   const estimateOne = async (t: UiTask, min: number) => { await postTask({ file: t.file, line: t.line, expectedText: t.text, patch: { estMinutes: min } }); refresh(); };
+  const rescheduleOne = async (t: UiTask, date: string) => { await postTask({ file: t.file, line: t.line, expectedText: t.text, patch: { due: date } }); refresh(); };
 
   const unstaged = source.filter((t) => !buffer[t.id]);
   const stagedTasks = Object.values(buffer).filter((c) => c.toGrain === aimed).map((c) => byId.get(c.taskId)).filter((t): t is UiTask => !!t);
@@ -140,6 +144,7 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
         <section data-testid="plan-board" className="grid grid-cols-[1.4fr_1fr] gap-5 px-5 pb-5 pt-3">
           <SourceColumn
             sourceTier={sourceTier}
+            label={overdueActive ? '⚠ Overdue' : undefined}
             groups={sortedGroups}
             toolbar={<SourceToolbar filters={filters} onFilters={setFilters} sort={sort} onSort={setSort} projects={projects} selectMode={selectMode} onToggleSelectMode={() => { setSelectMode((m) => !m); clearSel(); }} />}
             collapsed={collapsed}
@@ -152,7 +157,8 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
               <DraggableCard key={t.id} task={t} showFile
                 onEdit={() => setEditing(t)} onArchive={() => void archiveOne(t)}
                 onPromote={() => promoteOne(t)} onQuickEstimate={(m) => void estimateOne(t, m)}
-                selectable={selectMode} selected={selected.has(t.id)} onToggleSelect={() => toggleSel(t.id)} />
+                selectable={selectMode} selected={selected.has(t.id)} onToggleSelect={() => toggleSel(t.id)}
+                daysLate={daysLate(t.due, today)} onReschedule={(d) => void rescheduleOne(t, d)} />
             )}
           />
           <div className="flex flex-col gap-3">
