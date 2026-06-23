@@ -67,4 +67,42 @@ describe('POST /api/task (integration)', () => {
     const after = readFileSync(join(root, REL), 'utf8');
     expect(after).toBe(before); // byte-for-byte unchanged
   });
+
+  it('returns 400 on a malformed body (line is not a number)', async () => {
+    const res = await postTask({
+      file: REL,
+      line: 'NaN',
+      expectedText: 'x',
+      patch: {},
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 and writes nothing on a bad-typed patch field', async () => {
+    const before = readFileSync(join(root, REL), 'utf8');
+    // Line index 0 is `- [/] Working on it` — a real live line.
+    const res = await postTask({
+      file: REL,
+      line: 0,
+      expectedText: 'Working on it',
+      patch: { estMinutes: 'thirty' },
+    });
+    expect(res.status).toBe(400);
+
+    const after = readFileSync(join(root, REL), 'utf8');
+    expect(after).toBe(before); // byte-for-byte unchanged — no `~NaNm` written
+    expect(after).not.toContain('NaN');
+  });
+
+  it('returns 409 when the target file does not exist', async () => {
+    const res = await postTask({
+      file: 'does/not/exist.md',
+      line: 0,
+      expectedText: 'x',
+      patch: { state: 'done' },
+    });
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(typeof body.conflict).toBe('string');
+  });
 });
