@@ -154,7 +154,7 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
             onExpandAll={() => setAll(false)}
             onArchiveAll={archiveAll}
             renderTask={(t) => (
-              <DraggableCard key={t.id} task={t} showFile
+              <DraggableCard key={`${t.id}:${t.due ?? ''}`} task={t} showFile
                 onEdit={() => setEditing(t)} onArchive={() => void archiveOne(t)}
                 onPromote={() => promoteOne(t)} onQuickEstimate={(m) => void estimateOne(t, m)}
                 selectable={selectMode} selected={selected.has(t.id)} onToggleSelect={() => toggleSel(t.id)}
