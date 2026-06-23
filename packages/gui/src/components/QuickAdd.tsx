@@ -12,8 +12,7 @@ export function QuickAdd({ onCaptured }: { onCaptured: () => void }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const trimmed = text.trim();
-  const preview = trimmed ? previewCapture(text) : null;
+  const preview = text.trim() ? previewCapture(text) : null;
   const hasTokens = !!preview && (preview.estMinutes != null || preview.importance > 0 || preview.due != null || preview.project != null || preview.unparsed.length > 0);
 
   const submit = async () => {

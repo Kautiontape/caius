@@ -24,4 +24,16 @@ describe('previewCapture', () => {
       title: 'Buy milk', estMinutes: null, importance: 0, due: null, project: null, unparsed: [],
     });
   });
+
+  it('does not flag trailing markdown or an emoji as a typo', () => {
+    expect(previewCapture('Review the *design*').unparsed).toEqual([]);
+    expect(previewCapture('Thanks team :)').unparsed).toEqual([]);
+  });
+
+  it('parses an importance-only capture to an empty title with no typo flag', () => {
+    const p = previewCapture('!!');
+    expect(p.title).toBe('');
+    expect(p.importance).toBe(2);
+    expect(p.unparsed).toEqual([]);
+  });
 });

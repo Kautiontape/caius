@@ -10,7 +10,10 @@ export interface CapturePreview {
   unparsed: string[];
 }
 
-const SIGIL = /^[~!*&:]/;
+// A leftover last word that *looks* like an attempted token (matching the capture
+// grammar's sigil shapes) but didn't parse — surfaced as a likely typo. Narrow on
+// purpose so prose like "*bold*" or ":)" is not flagged.
+const LOOKS_LIKE_TOKEN = /^~\d|^\*\d|^:\[\[|^&[A-Za-z]|^!+$/;
 
 /** Preview the canonical parse of a capture line, reusing the engine's trailing-
  * token scanner so the preview always matches what the server will index. */
@@ -28,6 +31,6 @@ export function previewCapture(input: string): CapturePreview {
   // Heuristic typo flag: the last word of the leftover title begins with a token
   // sigil but never became a token (e.g. "~1hh30m", "*2026-7-1").
   const lastWord = p.title.split(/\s+/).pop() ?? '';
-  if (lastWord !== '' && SIGIL.test(lastWord)) p.unparsed.push(lastWord);
+  if (lastWord !== '' && LOOKS_LIKE_TOKEN.test(lastWord)) p.unparsed.push(lastWord);
   return p;
 }
