@@ -13,7 +13,7 @@ const STATE_BY_GLYPH: Record<string, State> = {
 const LIVE_STATES: ReadonlySet<State> = new Set<State>(['open', 'in_progress']);
 
 // indent · marker · checkbox glyph · (optional) rest
-const TASK_LINE = /^(\s*)[-*+][ \t]+\[(.)\](?:[ \t]+(.*))?$/;
+const TASK_LINE = /^(\s*)([-*+])[ \t]+\[(.)\](?:[ \t]+(.*))?$/;
 
 // A trailing block id: caret-word at end of line, preceded by start-or-whitespace
 // so a `#^id` inside `[[ ]]` (preceded by `#`) is never captured (§3.2, D5).
@@ -26,10 +26,12 @@ const TAG = /(?:^|\s)#([A-Za-z][\w/-]*)/g;
 export function parseTaskLine(line: string): TaskLine | null {
   const m = TASK_LINE.exec(line);
   if (!m) return null;
-  const state = STATE_BY_GLYPH[m[2]!];
+  const indentText = m[1]!;
+  const marker = m[2] as '-' | '*' | '+';
+  const state = STATE_BY_GLYPH[m[3]!];
   if (!state) return null; // strict 5-state set (D1) — anything else is not a task
 
-  let rest = (m[3] ?? '').trimEnd();
+  let rest = (m[4] ?? '').trimEnd();
 
   let blockId: string | null = null;
   const idM = BLOCK_ID.exec(rest);
@@ -48,5 +50,7 @@ export function parseTaskLine(line: string): TaskLine | null {
     tokens,
     tags,
     blockId,
+    marker,
+    indentText,
   };
 }

@@ -1,52 +1,55 @@
 export type State = 'open' | 'in_progress' | 'done' | 'cancelled' | 'tombstone';
 
-export interface ImportanceToken {
-  kind: 'importance';
+/**
+ * Common to every token. `raw` is the exact source text of the token (no leading
+ * whitespace). `changed` is set by a patch (B2) when a field is mutated, so the
+ * renderer (render-line.ts) regenerates the token instead of echoing `raw`;
+ * unchanged tokens always round-trip byte-identically via `raw`.
+ */
+interface TokenBase {
   raw: string;
+  changed?: boolean;
+}
+
+export interface ImportanceToken extends TokenBase {
+  kind: 'importance';
   tier: 1 | 2 | 3;
 }
 
-export interface EstimateToken {
+export interface EstimateToken extends TokenBase {
   kind: 'estimate';
-  raw: string;
   minutes: number;
 }
 
-export interface DueToken {
+export interface DueToken extends TokenBase {
   kind: 'due';
-  raw: string;
   date: string; // ISO YYYY-MM-DD
 }
 
-export interface DoneToken {
+export interface DoneToken extends TokenBase {
   kind: 'done';
-  raw: string;
   date: string; // ISO YYYY-MM-DD
 }
 
-export interface ProjectToken {
+export interface ProjectToken extends TokenBase {
   kind: 'project';
-  raw: string;
   project: string;
 }
 
-export interface FromToken {
+export interface FromToken extends TokenBase {
   kind: 'from';
-  raw: string;
   note: string;
   blockId: string | null; // present for recurrence backrefs (Recurring#^id)
 }
 
-export interface MovedToken {
+export interface MovedToken extends TokenBase {
   kind: 'moved';
-  raw: string;
   note: string;
   blockId: string;
 }
 
-export interface RecurrenceToken {
+export interface RecurrenceToken extends TokenBase {
   kind: 'recurrence';
-  raw: string;
   rule: string; // daily | weekly | monthly | mon | … (Phase 2; inert in Phase 1)
 }
 
@@ -68,6 +71,8 @@ export interface TaskLine {
   tokens: Token[];
   tags: string[];
   blockId: string | null;
+  marker: '-' | '*' | '+'; // bullet marker char
+  indentText: string; // raw leading whitespace
 }
 
 /** A task within a document: its line parse plus structural position (§3.6). */
