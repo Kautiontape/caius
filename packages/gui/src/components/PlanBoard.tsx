@@ -7,11 +7,14 @@ import { CSS } from '@dnd-kit/utilities';
 import { type Altitude, type Grain, destTiersForGrain } from '../lib/grains';
 import { fetchTasksAtGrain, postTask, type UiTask } from '../lib/api';
 import { tierBudgetMinutes, capacityMeter } from '../lib/capacity';
-import type { SourceGroup as Group } from '../lib/grouping';
+import { groupSource, type SourceGroup as Group } from '../lib/grouping';
+import { filterTasks, sortTasks, EMPTY_FILTERS, type SourceFilters, type SortKey } from '../lib/sourceFilter';
 import type { PendingChange, StagingBuffer, CommitResult } from '../lib/staging';
 import { summarizeBuffer, type CommitSummary } from '../lib/commitSummary';
 import { SourceColumn } from './SourceColumn';
 import { DestinationColumn } from './DestinationColumn';
+import { SourceToolbar } from './SourceToolbar';
+import { SelectionBar } from './SelectionBar';
 import { TaskCard } from './TaskCard';
 import { EditModal } from './EditModal';
 import { QuickAdd } from './QuickAdd';
@@ -30,11 +33,16 @@ interface Props {
   conflicts: CommitResult['conflicts'];
 }
 
-function DraggableCard({ task, showFile, staged, onEdit, onArchive }: { task: UiTask; showFile?: boolean; staged?: boolean; onEdit?: () => void; onArchive?: () => void }) {
-  const { setNodeRef, listeners, attributes, transform, isDragging } = useDraggable({ id: task.id });
+type CardProps = {
+  task: UiTask; showFile?: boolean; staged?: boolean;
+  onEdit?: () => void; onArchive?: () => void; onPromote?: () => void;
+  onQuickEstimate?: (m: number) => void; selectable?: boolean; selected?: boolean; onToggleSelect?: () => void;
+};
+function DraggableCard(p: CardProps) {
+  const { setNodeRef, listeners, attributes, transform, isDragging } = useDraggable({ id: p.task.id });
   const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : undefined };
   const handle = <button {...listeners} {...attributes} aria-label="drag" className="cursor-grab touch-none select-none text-dim hover:text-ink">⠿</button>;
-  return <div ref={setNodeRef} style={style}><TaskCard task={task} showFile={showFile} staged={staged} dragHandle={handle} onEdit={onEdit} onArchive={onArchive} /></div>;
+  return <div ref={setNodeRef} style={style}><TaskCard {...p} dragHandle={handle} /></div>;
 }
 
 const COLLAPSED_KEY = 'caius-collapsed';
@@ -50,6 +58,10 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
   const [confirmSummary, setConfirmSummary] = useState<CommitSummary | null>(null);
   const [committing, setCommitting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [filters, setFilters] = useState<SourceFilters>(EMPTY_FILTERS);
+  const [sort, setSort] = useState<SortKey>('priority');
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const refresh = () => {
     void fetchTasksAtGrain(sourceTier).then(setSource);
@@ -73,11 +85,7 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
   for (const t of members) byId.set(t.id, t);
   for (const c of Object.values(buffer)) {
     if (!byId.has(c.taskId)) {
-      byId.set(c.taskId, {
-        id: c.taskId, file: c.snapshot.file, line: c.snapshot.line, text: c.snapshot.text,
-        project: null, grain: c.fromGrain, bucket: null, slot: null,
-        estMinutes: null, importance: 0, due: null, notes: [], inProgress: false, done: false,
-      });
+      byId.set(c.taskId, { id: c.taskId, file: c.snapshot.file, line: c.snapshot.line, text: c.snapshot.text, project: null, grain: c.fromGrain, bucket: null, slot: null, estMinutes: null, importance: 0, due: null, notes: [], inProgress: false, done: false });
     }
   }
 
@@ -97,9 +105,24 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
     onStage({ taskId, fromGrain: task?.grain ?? sourceTier, toGrain: tier, toBucket: 'this', slot: tier === 'day' ? 'today' : undefined, kind: 'promote', snapshot });
   };
 
+  const promoteOne = (t: UiTask) => onStage({ taskId: t.id, fromGrain: t.grain ?? sourceTier, toGrain: aimed, toBucket: 'this', slot: aimed === 'day' ? 'today' : undefined, kind: 'promote', snapshot: { file: t.file, line: t.line, text: t.text } });
+  const estimateOne = async (t: UiTask, min: number) => { await postTask({ file: t.file, line: t.line, expectedText: t.text, patch: { estMinutes: min } }); refresh(); };
+
   const unstaged = source.filter((t) => !buffer[t.id]);
   const stagedTasks = Object.values(buffer).filter((c) => c.toGrain === aimed).map((c) => byId.get(c.taskId)).filter((t): t is UiTask => !!t);
   const meter = capacityMeter([...members, ...stagedTasks], tierBudgetMinutes(aimed, capacityMinutes));
+
+  const today = new Date().toISOString().slice(0, 10);
+  const filtered = filterTasks(unstaged, filters, today);
+  const sortedGroups = groupSource(filtered).map((g) => ({ ...g, tasks: sortTasks(g.tasks, sort) }));
+  const projects = [...new Set(unstaged.map((t) => t.project).filter((p): p is string => !!p))].sort();
+
+  const toggleSel = (id: string) => setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const clearSel = () => setSelected(new Set());
+  const selectedTasks = () => source.filter((t) => selected.has(t.id));
+  const bulkPromote = () => { for (const t of selectedTasks()) promoteOne(t); clearSel(); };
+  const bulkEstimate = async (min: number) => { for (const t of selectedTasks()) await postTask({ file: t.file, line: t.line, expectedText: t.text, patch: { estMinutes: min } }); clearSel(); refresh(); };
+  const bulkArchive = async () => { if (!window.confirm(`Archive ${selected.size} selected task(s) as won't-do?`)) return; for (const t of selectedTasks()) await archive(t); clearSel(); refresh(); };
 
   const anyExpanded = Object.values(collapsed).some((v) => v === false);
   const setAll = (val: boolean) => { const next: Record<string, boolean> = {}; for (const t of unstaged) next[t.project ? `project:${t.project}` : `doc:${t.file}`] = val; saveCollapsed(next); setCollapsed(next); };
@@ -116,14 +139,20 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
         <section data-testid="plan-board" className="grid grid-cols-[1.4fr_1fr] gap-5 px-5 pb-5 pt-3">
           <SourceColumn
             sourceTier={sourceTier}
-            tasks={unstaged}
+            groups={sortedGroups}
+            toolbar={<SourceToolbar filters={filters} onFilters={setFilters} sort={sort} onSort={setSort} projects={projects} selectMode={selectMode} onToggleSelectMode={() => { setSelectMode((m) => !m); clearSel(); }} />}
             collapsed={collapsed}
             anyExpanded={anyExpanded}
             onToggle={toggleGroup}
             onCollapseAll={() => setAll(true)}
             onExpandAll={() => setAll(false)}
             onArchiveAll={archiveAll}
-            renderTask={(t) => <DraggableCard key={t.id} task={t} showFile onEdit={() => setEditing(t)} onArchive={() => void archiveOne(t)} />}
+            renderTask={(t) => (
+              <DraggableCard key={t.id} task={t} showFile
+                onEdit={() => setEditing(t)} onArchive={() => void archiveOne(t)}
+                onPromote={() => promoteOne(t)} onQuickEstimate={(m) => void estimateOne(t, m)}
+                selectable={selectMode} selected={selected.has(t.id)} onToggleSelect={() => toggleSel(t.id)} />
+            )}
           />
           <div className="flex flex-col gap-3">
             <DestinationColumn aimed={aimed} tabs={destTiersForGrain(altitude)} isDefault={aimed === altitude} onAim={onAim} meter={meter} count={members.length + stagedTasks.length} dragging={dragging}>
@@ -137,6 +166,7 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
               className="rounded-lg bg-accent px-3 py-2 text-bg disabled:opacity-40">commit plan</button>
           </div>
           {editing && <EditModal task={editing} onClose={() => setEditing(null)} onSaved={refresh} />}
+          {selectMode && <SelectionBar count={selected.size} onPromote={bulkPromote} onEstimate={(m) => void bulkEstimate(m)} onArchive={() => void bulkArchive()} onClear={clearSel} />}
           {confirmSummary && (
             <CommitSummaryModal
               summary={confirmSummary}
