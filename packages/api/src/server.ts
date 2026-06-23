@@ -106,6 +106,7 @@ export function serveCaius(opts: ServeOptions): Promise<Server> {
         vault: opts.root,
         report: result.report,
         capacityMinutes: config.capacity.workday_minutes,
+        obsidian: config.obsidian,
       });
     if (p === '/api/funnel') return json(res, funnel(result));
     if (p === '/api/flags') return json(res, flagsSummary(result));

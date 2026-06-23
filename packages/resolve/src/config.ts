@@ -32,6 +32,7 @@ export interface Config {
   horizon_default: string;
   project_mapping: ProjectRule[];
   excluded: string[];
+  obsidian: { vault: string; advancedUri: boolean };
 }
 
 /** The concrete §7 configuration for `/home/shawn/documents/obsidian/Main`. */
@@ -62,6 +63,7 @@ export const DEFAULT_CONFIG: Config = {
     { match: '10 - Project/*/**/*.md', project: '{seg1}' },
     { match: '10 - Project/*.md', project: '{filename}' },
   ],
+  obsidian: { vault: 'Main', advancedUri: false },
   excluded: [
     '01 - Inbox/**',
     '30 - Resources/**',

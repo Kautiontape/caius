@@ -5,6 +5,7 @@ import {
   type FunnelData, type SummaryData, type UiTask,
 } from './lib/api';
 import { stagingReducer, commit, type PendingChange, type CommitResult } from './lib/staging';
+import { ObsidianContext } from './lib/obsidian';
 import { PlanHeader } from './components/PlanHeader';
 import { PipelineStrip } from './components/PipelineStrip';
 import { PlanBoard } from './components/PlanBoard';
@@ -48,7 +49,10 @@ export function App() {
     void fetchFunnel().then(setFunnel);
   };
 
+  const obsidianValue = summary?.obsidian ?? { vault: 'Main', advancedUri: false };
+
   return (
+    <ObsidianContext.Provider value={obsidianValue}>
     <div className="min-h-full">
       <PlanHeader
         altitude={altitude}
@@ -102,5 +106,6 @@ export function App() {
         </main>
       )}
     </div>
+    </ObsidianContext.Provider>
   );
 }

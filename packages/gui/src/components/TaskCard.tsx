@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import type { UiTask } from '../lib/api';
+import { ObsidianContext, obsidianHref } from '../lib/obsidian';
 
 interface Props {
   task: UiTask;
@@ -17,6 +18,7 @@ function estLabel(min: number | null): string {
 }
 
 export function TaskCard({ task, staged, actions, showFile, dragHandle }: Props) {
+  const obsidian = useContext(ObsidianContext);
   return (
     <div
       data-testid="task-card"
@@ -38,9 +40,14 @@ export function TaskCard({ task, staged, actions, showFile, dragHandle }: Props)
         <span className={task.estMinutes == null ? 'text-warn' : ''}>{estLabel(task.estMinutes)}</span>
         {task.importance > 0 && <span>{'!'.repeat(task.importance)}</span>}
         {showFile && !task.project && (
-          <span className="rounded border border-line bg-panel px-1.5 text-[11px] text-dim" data-testid="file-chip">
+          <a
+            href={obsidianHref(obsidian.vault, task.file, task.line, obsidian.advancedUri)}
+            data-testid="file-chip"
+            className="rounded border border-line bg-panel px-1.5 text-[11px] text-dim hover:text-accent"
+            onClick={(e) => e.stopPropagation()}
+          >
             {task.file}
-          </span>
+          </a>
         )}
       </div>
     </div>

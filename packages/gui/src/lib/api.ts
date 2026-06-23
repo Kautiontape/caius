@@ -77,5 +77,6 @@ export interface SummaryData {
   vault: string;
   capacityMinutes: number;
   report: { fileCount: number; taskCount: number; liveCount: number };
+  obsidian: { vault: string; advancedUri: boolean };
 }
 export const fetchSummary = () => getJson<SummaryData>('/api/summary');
