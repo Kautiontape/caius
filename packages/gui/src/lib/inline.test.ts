@@ -22,4 +22,16 @@ describe('parseInline', () => {
       { kind: 'code', text: 'npm run' },
     ]);
   });
+
+  it('returns an empty array for empty input', () => {
+    expect(parseInline('')).toEqual([]);
+  });
+
+  it('passes an unclosed delimiter through as plain text', () => {
+    expect(parseInline('half **bold')).toEqual([{ kind: 'text', text: 'half **bold' }]);
+  });
+
+  it('neutralizes a javascript: link href to "#"', () => {
+    expect(parseInline('[x](javascript:alert)')).toEqual([{ kind: 'link', text: 'x', href: '#' }]);
+  });
 });
