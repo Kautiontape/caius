@@ -48,6 +48,7 @@ export function App() {
     const conflictIds = new Set(res.conflicts.map((c) => c.taskId));
     for (const id of Object.keys(buffer)) if (!conflictIds.has(id)) dispatch({ type: 'unstage', taskId: id });
     void fetchFunnel().then(setFunnel);
+    return res;
   };
 
   const obsidianValue = summary?.obsidian ?? { vault: 'Main', advancedUri: false };
@@ -82,7 +83,7 @@ export function App() {
               buffer={buffer}
               onStage={onStage}
               onUnstage={onUnstage}
-              onCommit={() => void onCommit()}
+              onCommit={onCommit}
               conflicts={conflicts}
             />
           )}
