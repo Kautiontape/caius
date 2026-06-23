@@ -17,6 +17,8 @@ interface Props {
   selectable?: boolean;
   selected?: boolean;
   onToggleSelect?: () => void;
+  daysLate?: number;
+  onReschedule?: (date: string) => void;
 }
 
 function estLabel(min: number | null): string {
@@ -29,7 +31,7 @@ function estLabel(min: number | null): string {
 const EST_CHIPS = [15, 30, 45, 60, 120];
 const chipLabel = (m: number) => (m % 60 === 0 ? `${m / 60}h` : `${m}m`);
 
-export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, onArchive, onPromote, onQuickEstimate, selectable, selected, onToggleSelect }: Props) {
+export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, onArchive, onPromote, onQuickEstimate, selectable, selected, onToggleSelect, daysLate, onReschedule }: Props) {
   const obsidian = useContext(ObsidianContext);
   const [estOpen, setEstOpen] = useState(false);
   return (
@@ -74,6 +76,17 @@ export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, 
           <span className={task.estMinutes == null ? 'text-warn' : ''}>{estLabel(task.estMinutes)}</span>
         )}
         {task.importance > 0 && <span>{'!'.repeat(task.importance)}</span>}
+        {daysLate != null && daysLate > 0 && <span data-testid="days-late" className="font-medium text-over">{daysLate}d late</span>}
+        {onReschedule && (
+          <input
+            type="date"
+            data-testid="reschedule"
+            defaultValue={task.due ?? ''}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => { if (e.target.value) onReschedule(e.target.value); }}
+            className="rounded border border-line bg-panel px-1 text-[11px] text-ink"
+          />
+        )}
         {showFile && !task.project && (
           <a href={obsidianHref(obsidian.vault, task.file, task.line, obsidian.advancedUri)} data-testid="file-chip"
             className="rounded border border-line bg-panel px-1.5 text-[11px] text-dim hover:text-accent" onClick={(e) => e.stopPropagation()}>
