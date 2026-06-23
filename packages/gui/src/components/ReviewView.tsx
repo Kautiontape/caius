@@ -32,7 +32,7 @@ export function ReviewView({ altitude, done, open, pending, onStage, onUnstage }
       <div>
         <div className="mb-1.5 text-xs uppercase tracking-wide text-dim" data-testid="review-done">Completed ({done.length})</div>
         <div className="flex flex-col gap-1.5">
-          {done.map((t) => <TaskCard key={t.id} task={t} />)}
+          {done.map((t) => <TaskCard key={t.id} task={t} showFile />)}
           {done.length === 0 && <div className="text-xs italic text-dim">nothing completed yet</div>}
         </div>
       </div>
@@ -46,6 +46,7 @@ export function ReviewView({ altitude, done, open, pending, onStage, onUnstage }
               <TaskCard
                 key={t.id}
                 task={t}
+                showFile
                 staged={staged}
                 actions={
                   staged ? (

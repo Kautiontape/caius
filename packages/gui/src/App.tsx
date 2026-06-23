@@ -82,23 +82,21 @@ export function App() {
             />
           )}
           {posture === 'review' && (
-            <div className="grid grid-cols-[1fr_320px] gap-5 p-5">
-              <div className="flex flex-col gap-4">
-                <RitualSummary
-                  altitude={altitude}
-                  doneCount={review.done.length}
-                  openCount={review.open.length}
-                  stagedCount={Object.keys(buffer).length}
-                />
-                <ReviewView
-                  altitude={altitude}
-                  done={review.done}
-                  open={review.open}
-                  pending={buffer}
-                  onStage={onStage}
-                  onUnstage={onUnstage}
-                />
-              </div>
+            <div className="flex flex-col gap-4 p-5">
+              <RitualSummary
+                altitude={altitude}
+                doneCount={review.done.length}
+                openCount={review.open.length}
+                stagedCount={Object.keys(buffer).length}
+              />
+              <ReviewView
+                altitude={altitude}
+                done={review.done}
+                open={review.open}
+                pending={buffer}
+                onStage={onStage}
+                onUnstage={onUnstage}
+              />
             </div>
           )}
         </main>
