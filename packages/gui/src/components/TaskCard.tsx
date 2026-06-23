@@ -1,6 +1,7 @@
 import { useContext, type ReactNode } from 'react';
 import type { UiTask } from '../lib/api';
 import { ObsidianContext, obsidianHref } from '../lib/obsidian';
+import { InlineText } from './InlineText';
 
 interface Props {
   task: UiTask;
@@ -33,7 +34,7 @@ export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, 
         {dragHandle}
         <div className={`flex-1 text-sm ${task.done ? 'line-through text-dim' : 'text-ink'}`}>
           {task.inProgress && <span className="mr-1 text-good">◷</span>}
-          {task.text || '(untitled)'}
+          {task.text ? <InlineText text={task.text} /> : '(untitled)'}
         </div>
         {actions}
         {onEdit && (
