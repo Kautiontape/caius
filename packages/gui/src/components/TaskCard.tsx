@@ -6,6 +6,7 @@ interface Props {
   staged?: boolean;
   actions?: ReactNode;
   showFile?: boolean;
+  dragHandle?: ReactNode;
 }
 
 function estLabel(min: number | null): string {
@@ -15,7 +16,7 @@ function estLabel(min: number | null): string {
   return `~${min}m`;
 }
 
-export function TaskCard({ task, staged, actions, showFile }: Props) {
+export function TaskCard({ task, staged, actions, showFile, dragHandle }: Props) {
   return (
     <div
       data-testid="task-card"
@@ -25,6 +26,7 @@ export function TaskCard({ task, staged, actions, showFile }: Props) {
       } ${staged ? 'opacity-[0.42]' : ''}`}
     >
       <div className="flex items-start gap-2">
+        {dragHandle}
         <div className={`flex-1 text-sm ${task.done ? 'line-through text-dim' : 'text-ink'}`}>
           {task.inProgress && <span className="mr-1 text-good">◷</span>}
           {task.text || '(untitled)'}
