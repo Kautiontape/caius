@@ -31,6 +31,22 @@ export function EditModal({ task, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [conflict, setConflict] = useState<string | null>(null);
 
+  // Re-initialize the form when the modal instance is reused for a different task
+  // (e.g. clicking ✎ on card A then card B without closing). useState only runs at
+  // mount, so without this the form would keep card A's values while `task` is card B.
+  useEffect(() => {
+    setFields({
+      text: task.text,
+      estimate: formatEstimate(task.estMinutes),
+      importance: task.importance as 0 | 1 | 2 | 3,
+      due: task.due ?? '',
+      project: task.project ?? '',
+      description: task.notes.join('\n'),
+    });
+    setConflict(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task.id]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -42,7 +58,7 @@ export function EditModal({ task, onClose, onSaved }: Props) {
 
   const patch = buildPatch(task, fields);
   const estInvalid = parseEstimate(fields.estimate) === 'invalid';
-  const canSave = !estInvalid && Object.keys(patch).length > 0 && !saving;
+  const canSave = !estInvalid && Object.keys(patch).length > 0 && !saving && conflict === null;
 
   const onSave = async () => {
     if (!canSave) return;
@@ -50,8 +66,15 @@ export function EditModal({ task, onClose, onSaved }: Props) {
     setConflict(null);
     try {
       const res = await postTask({ file: task.file, line: task.line, expectedText: task.text, patch });
-      if (res.conflict || res.error) {
-        setConflict(res.conflict ?? res.error ?? 'changed on disk — reload');
+      if (res.conflict) {
+        // 409: the disk changed under us. Refresh the parent so the underlying card
+        // reflects disk, but keep the modal open with the conflict notice. Save is
+        // now gated off, forcing Cancel & reopen against fresh data.
+        setConflict(res.conflict);
+        onSaved();
+      } else if (res.error) {
+        // Network/500: nothing was written. Show the error so the user can retry.
+        setConflict(res.error);
       } else {
         onSaved();
         onClose();
@@ -80,6 +103,7 @@ export function EditModal({ task, onClose, onSaved }: Props) {
           <input
             id="edit-text"
             data-testid="edit-text"
+            autoFocus
             value={fields.text}
             onChange={(e) => set('text', e.target.value)}
             className={inputCls}
@@ -156,7 +180,7 @@ export function EditModal({ task, onClose, onSaved }: Props) {
 
         {conflict && (
           <div data-testid="edit-conflict" className="rounded-md border border-over/40 bg-panel2 p-2 text-sm text-over">
-            {conflict} — reload
+            {conflict}. The list has been refreshed — close and reopen to edit the latest.
           </div>
         )}
 

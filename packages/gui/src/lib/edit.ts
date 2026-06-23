@@ -16,14 +16,18 @@ export interface EditFields {
 export function parseEstimate(s: string): number | null | 'invalid' {
   const trimmed = s.trim();
   if (trimmed === '') return null;
-  // Bare integer → minutes.
-  if (/^\d+$/.test(trimmed)) return Number(trimmed);
+  // Bare integer → minutes (a 0-minute estimate is meaningless).
+  if (/^\d+$/.test(trimmed)) {
+    const n = Number(trimmed);
+    return n > 0 ? n : 'invalid';
+  }
   // Nh, Nm, or NhMm (case-insensitive, no leading sign).
   const m = /^(?:(\d+)h)?(?:(\d+)m)?$/i.exec(trimmed);
   if (!m || (m[1] === undefined && m[2] === undefined)) return 'invalid';
   const hours = m[1] ? Number(m[1]) : 0;
   const mins = m[2] ? Number(m[2]) : 0;
-  return hours * 60 + mins;
+  const total = hours * 60 + mins;
+  return total > 0 ? total : 'invalid';
 }
 
 /** Format minutes back to the estimate input value (inverse of parseEstimate for
@@ -56,8 +60,8 @@ export function buildPatch(task: UiTask, fields: EditFields): Record<string, unk
   const project = fields.project.trim() || null;
   if (project !== task.project) patch.project = project;
 
-  const origDescription = task.notes.join('\n');
-  if (fields.description !== origDescription) patch.description = fields.description;
+  const origDescription = task.notes.join('\n').trim();
+  if (fields.description.trim() !== origDescription) patch.description = fields.description.trim();
 
   return patch;
 }

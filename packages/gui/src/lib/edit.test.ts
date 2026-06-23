@@ -37,6 +37,9 @@ describe('parseEstimate', () => {
   it('1h30m → 90', () => expect(parseEstimate('1h30m')).toBe(90));
   it('bare integer 90 → 90 (minutes)', () => expect(parseEstimate('90')).toBe(90));
   it('abc → invalid', () => expect(parseEstimate('abc')).toBe('invalid'));
+  it('0 → invalid (zero estimate is meaningless)', () => expect(parseEstimate('0')).toBe('invalid'));
+  it('0m → invalid', () => expect(parseEstimate('0m')).toBe('invalid'));
+  it('0h → invalid', () => expect(parseEstimate('0h')).toBe('invalid'));
 });
 
 describe('formatEstimate', () => {
@@ -69,6 +72,11 @@ describe('buildPatch', () => {
   it('setting description from empty notes → { description }', () => {
     const t = baseTask({ notes: [] });
     expect(buildPatch(t, fieldsFor(t, { description: 'a note' }))).toEqual({ description: 'a note' });
+  });
+
+  it('trailing newline on unchanged description → empty patch', () => {
+    const t = baseTask({ notes: ['line1', 'line2'] });
+    expect(buildPatch(t, fieldsFor(t, { description: 'line1\nline2\n' }))).toEqual({});
   });
 
   it('changing text → { text }', () => {
