@@ -61,3 +61,14 @@ export const RITUALS: Record<Altitude, Record<Posture, Ritual>> = {
     review: { key: 'day-review', altitude: 'day', posture: 'review', title: 'Daily shutdown', grain: 'day', blurb: 'close out the day, defer the rest' },
   },
 };
+
+/** The tier a given planning grain pulls FROM (the anchored left/source column). */
+export function sourceTierForGrain(grain: Altitude): Grain {
+  return PREV_GRAIN[grain]!; // month→someday, week→month, day→week
+}
+
+/** The destination tiers the right column may aim at for a grain: the grain's own
+ * destination and everything downstream of it. month→[month,week,day], etc. */
+export function destTiersForGrain(grain: Altitude): ('month' | 'week' | 'day')[] {
+  return BUCKETS.slice(BUCKETS.indexOf(grain));
+}

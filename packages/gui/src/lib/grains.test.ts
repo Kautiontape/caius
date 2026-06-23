@@ -31,3 +31,19 @@ describe('grains — rituals', () => {
     expect(RITUALS.day.plan.to).toBe('day');
   });
 });
+
+import { sourceTierForGrain, destTiersForGrain } from './grains';
+
+describe('sourceTierForGrain / destTiersForGrain', () => {
+  it('maps each grain to the tier it pulls from', () => {
+    expect(sourceTierForGrain('month')).toBe('someday');
+    expect(sourceTierForGrain('week')).toBe('month');
+    expect(sourceTierForGrain('day')).toBe('week');
+  });
+
+  it('lists the aimable destination tiers (grain onward)', () => {
+    expect(destTiersForGrain('month')).toEqual(['month', 'week', 'day']);
+    expect(destTiersForGrain('week')).toEqual(['week', 'day']);
+    expect(destTiersForGrain('day')).toEqual(['day']);
+  });
+});
