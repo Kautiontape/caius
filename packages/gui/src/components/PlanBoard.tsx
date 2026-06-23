@@ -78,6 +78,7 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
 
     if (over === 'source') { onUnstage(taskId); return; } // drop back to backlog = un-stage
 
+    if (!over.startsWith('bucket:')) return;
     const grain = over.replace('bucket:', '') as 'month' | 'week' | 'day';
     const slot = grain === 'day' ? ('today' as const) : undefined;
     const task = byId.get(taskId);
@@ -125,7 +126,7 @@ export function PlanBoard({ altitude, capacityMinutes, buffer, onStage, onUnstag
               .map((c) => byId.get(c.taskId))
               .filter((t): t is UiTask => !!t);
             const cards = [
-              ...member.map((t) => <TaskCard key={`m-${t.id}`} task={t} showFile />),
+              ...member.map((t) => <DraggableCard key={`m-${t.id}`} task={t} showFile />),
               ...stagedTasks.map((t) => (
                 <DraggableCard key={`s-${t.id}`} task={t} staged showFile />
               )),
