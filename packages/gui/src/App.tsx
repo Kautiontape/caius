@@ -11,6 +11,7 @@ import { PipelineStrip } from './components/PipelineStrip';
 import { PlanBoard } from './components/PlanBoard';
 import { ReviewView } from './components/ReviewView';
 import { RitualSummary } from './components/RitualSummary';
+import { FocusView } from './components/FocusView';
 
 export function App() {
   const [altitude, setAltitude] = useState<Altitude>('day');
@@ -71,7 +72,7 @@ export function App() {
         nowCount={funnel?.now.length ?? 0}
       />
       {mode === 'focus' ? (
-        <main className="p-5 text-dim" data-testid="focus-placeholder">Focus mode — coming soon.</main>
+        <FocusView />
       ) : (
         <main data-testid="ritual-body">
           {posture === 'plan' && (

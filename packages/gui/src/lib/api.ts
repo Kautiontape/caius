@@ -80,3 +80,23 @@ export interface SummaryData {
   obsidian: { vault: string; advancedUri: boolean };
 }
 export const fetchSummary = () => getJson<SummaryData>('/api/summary');
+
+/** Client-side shutdown calc (pure; unit-tested). remainingMin = Σ estimates over
+ * the active list; unestimated = how many have no estimate; earliest = now + remainingMin. */
+export function shutdown(active: { estMinutes: number | null }[], now: Date) {
+  const remainingMin = active.reduce((s, t) => s + (t.estMinutes ?? 0), 0);
+  const unestimated = active.filter((t) => t.estMinutes == null).length;
+  return { remainingMin, unestimated, earliest: new Date(now.getTime() + remainingMin * 60000) };
+}
+
+export interface FocusData { date: string; active: ApiTask[]; doneToday: number; }
+export const fetchFocus = () => getJson<FocusData>('/api/focus');
+
+export async function postTask(body: unknown): Promise<{ ok?: true; conflict?: string; task?: ApiTask }> {
+  const res = await fetch('/api/task', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}

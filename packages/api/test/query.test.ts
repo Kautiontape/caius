@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { IndexedTask, ScanResult } from '@caius/index';
-import { funnel, filterTasks, reviewSplit, explain, flagsSummary } from '../src/query.js';
+import { funnel, filterTasks, reviewSplit, explain, flagsSummary, focus } from '../src/query.js';
 
 let rowid = 0;
 function mk(p: Partial<IndexedTask>): IndexedTask {
@@ -148,6 +148,28 @@ describe('reviewSplit', () => {
     const split = reviewSplit(r, 'day', 'past');
     expect(split.open.map((t) => t.text)).toEqual(['past-open']);
     expect(split.done).toHaveLength(0);
+  });
+});
+
+describe('focus', () => {
+  it("returns today's doing-list ordered in-progress-first then importance-desc, with doneToday count", () => {
+    const ip = mk({ text: 'ip', grain: 'day', bucket: 'this', live: true, state: 'in_progress', importance: 0 });
+    const hi = mk({ text: 'hi', grain: 'day', bucket: 'this', live: true, state: 'open', importance: 2 });
+    const lo = mk({ text: 'lo', grain: 'day', bucket: 'this', live: true, state: 'open', importance: 0 });
+    const dn = mk({ text: 'dn', grain: 'day', bucket: 'this', live: false, state: 'done' });
+    const cx = mk({ text: 'cx', grain: 'day', bucket: 'this', live: false, state: 'cancelled' });
+    const wk = mk({ text: 'wk', grain: 'week', bucket: 'this', live: true, state: 'open' });
+    const r: ScanResult = { ...result, tasks: [hi, dn, lo, cx, ip, wk] };
+    const f = focus(r, new Date('2026-06-22T14:00:00'));
+
+    // in-progress first, then importance desc; done/cancelled and the week task excluded
+    expect(f.active.map((t) => t.text)).toEqual(['ip', 'hi', 'lo']);
+    expect(f.active.map((t) => t.text)).not.toContain('dn');
+    expect(f.active.map((t) => t.text)).not.toContain('cx');
+    expect(f.active.map((t) => t.text)).not.toContain('wk');
+    // doneToday counts only the done day/this task (not cancelled, not the week task)
+    expect(f.doneToday).toBe(1);
+    expect(f.date).toBe('2026-06-22');
   });
 });
 

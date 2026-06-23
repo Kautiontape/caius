@@ -10,7 +10,7 @@ import { scanVault, type ScanResult } from '@caius/index';
 import { watchVault, type Watcher } from '@caius/watch';
 import { DEFAULT_CONFIG, type Config } from '@caius/resolve';
 import type { State } from '@caius/core';
-import { funnel, filterTasks, reviewSplit, explain, flagsSummary } from './query.js';
+import { funnel, filterTasks, reviewSplit, explain, flagsSummary, focus } from './query.js';
 import { reconcileCommit, type CommitChange } from './commit.js';
 import { handleTaskUpdate } from './task.js';
 
@@ -110,6 +110,7 @@ export function serveCaius(opts: ServeOptions): Promise<Server> {
         obsidian: config.obsidian,
       });
     if (p === '/api/funnel') return json(res, funnel(result));
+    if (p === '/api/focus') return json(res, focus(result, now));
     if (p === '/api/flags') return json(res, flagsSummary(result));
     if (p === '/api/tasks') {
       return json(

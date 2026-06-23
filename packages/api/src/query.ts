@@ -91,6 +91,35 @@ export function explain(result: ScanResult, by: { rowid?: number; blockId?: stri
   return task ? { task, derivations: task.derivations } : null;
 }
 
+export interface FocusData {
+  date: string;
+  active: IndexedTask[];
+  doneToday: number;
+}
+
+/** Today's doing-list: live tasks in today's daily note (grain 'day', bucket 'this'),
+ * in-progress first then by importance desc; plus the count of [x] done in that note.
+ *
+ * grain==='day' && bucket==='this' === today's daily note: the Daily periodic horizon
+ * rule resolves a daily note to grain 'day', and bucket==='this' means its filename
+ * date === now (see resolve/period.ts periodBucket). Only daily notes produce grain
+ * 'day', and only today's produces bucket 'this' — so this filter is exactly "today's
+ * note", no path-string derivation needed. */
+export function focus(result: ScanResult, now: Date): FocusData {
+  const dayThis = result.tasks.filter((t) => t.grain === 'day' && t.bucket === 'this');
+  const active = dayThis
+    .filter((t) => t.live)
+    .sort((a, b) => {
+      const ip = (a.state === 'in_progress' ? 0 : 1) - (b.state === 'in_progress' ? 0 : 1);
+      return ip !== 0 ? ip : b.importance - a.importance;
+    });
+  const doneToday = dayThis.filter((t) => t.state === 'done').length;
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return { date: `${yyyy}-${mm}-${dd}`, active, doneToday };
+}
+
 export interface FlagGroup {
   kind: string;
   severity: Flag['severity'];
