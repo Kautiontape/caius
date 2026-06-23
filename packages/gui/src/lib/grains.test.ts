@@ -32,7 +32,7 @@ describe('grains — rituals', () => {
   });
 });
 
-import { sourceTierForGrain, destTiersForGrain } from './grains';
+import { sourceTierForGrain, destTiersForGrain, sourceTiersForGrain } from './grains';
 
 describe('sourceTierForGrain / destTiersForGrain', () => {
   it('maps each grain to the tier it pulls from', () => {
@@ -45,5 +45,13 @@ describe('sourceTierForGrain / destTiersForGrain', () => {
     expect(destTiersForGrain('month')).toEqual(['month', 'week', 'day']);
     expect(destTiersForGrain('week')).toEqual(['week', 'day']);
     expect(destTiersForGrain('day')).toEqual(['day']);
+  });
+});
+
+describe('sourceTiersForGrain', () => {
+  it('lists pull-from tiers default-first, upstream toward someday', () => {
+    expect(sourceTiersForGrain('month')).toEqual(['someday']);
+    expect(sourceTiersForGrain('week')).toEqual(['month', 'someday']);
+    expect(sourceTiersForGrain('day')).toEqual(['week', 'month', 'someday']);
   });
 });

@@ -9,6 +9,8 @@ type Row = { kind: 'header'; group: Group } | { kind: 'task'; task: UiTask };
 
 interface Props {
   sourceTier: Grain;
+  sourceTabs: Grain[];
+  onAimSource: (t: Grain) => void;
   label?: string;
   groups: Group[];
   toolbar?: ReactNode;
@@ -25,7 +27,7 @@ interface Props {
  * virtualized (padding-spacer pattern) so a huge backlog renders only visible rows
  * while drag-and-drop still works (no per-row transforms). The whole column is the
  * 'source' drop target (drop a staged card here to un-stage). */
-export function SourceColumn({ sourceTier, label, groups, toolbar, collapsed, anyExpanded, onToggle, onCollapseAll, onExpandAll, onArchiveAll, renderTask }: Props) {
+export function SourceColumn({ sourceTier, sourceTabs, onAimSource, label, groups, toolbar, collapsed, anyExpanded, onToggle, onCollapseAll, onExpandAll, onArchiveAll, renderTask }: Props) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: 'source' });
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -51,7 +53,23 @@ export function SourceColumn({ sourceTier, label, groups, toolbar, collapsed, an
     <div ref={setDropRef} data-testid="source"
       className={`flex max-h-[calc(100vh-170px)] flex-col rounded-lg border bg-panel p-3 shadow-sm transition-all ${isOver ? 'border-accent ring-2 ring-accent/50' : 'border-line'}`}>
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wide text-dim">{label ?? `Source · ${GRAIN_LABEL[sourceTier]}`}</span>
+        {label ? (
+          <span className="text-xs uppercase tracking-wide text-dim">{label}</span>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-xs uppercase tracking-wide text-dim">Source</span>
+            {sourceTabs.length > 1 ? (
+              <div className="flex rounded-full bg-panel2 p-0.5 text-[11px]" data-testid="source-tabs">
+                {sourceTabs.map((t) => (
+                  <button key={t} data-testid={`source-tab-${t}`} onClick={() => onAimSource(t)}
+                    className={`rounded-full px-2.5 py-0.5 ${t === sourceTier ? 'bg-accent text-bg' : 'text-dim hover:text-ink'}`}>{GRAIN_LABEL[t]}</button>
+                ))}
+              </div>
+            ) : (
+              <span className="text-xs uppercase tracking-wide text-dim">· {GRAIN_LABEL[sourceTier]}</span>
+            )}
+          </div>
+        )}
         {groups.length > 0 && (
           <button data-testid="collapse-all" onClick={anyExpanded ? onCollapseAll : onExpandAll} className="text-xs text-dim hover:text-ink">{anyExpanded ? 'Collapse all' : 'Expand all'}</button>
         )}

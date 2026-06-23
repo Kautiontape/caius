@@ -67,6 +67,13 @@ export function sourceTierForGrain(grain: Altitude): Grain {
   return PREV_GRAIN[grain]!; // month→someday, week→month, day→week
 }
 
+/** The source tiers a grain may pull from: the grain's previous tier and everything
+ * upstream toward someday, default-first. month→[someday], week→[month,someday],
+ * day→[week,month,someday]. */
+export function sourceTiersForGrain(grain: Altitude): Grain[] {
+  return PIPELINE.slice(0, PIPELINE.indexOf(PREV_GRAIN[grain]!) + 1).reverse();
+}
+
 /** The destination tiers the right column may aim at for a grain: the grain's own
  * destination and everything downstream of it. month→[month,week,day], etc. */
 export function destTiersForGrain(grain: Altitude): ('month' | 'week' | 'day')[] {

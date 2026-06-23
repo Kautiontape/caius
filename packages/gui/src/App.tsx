@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useState } from 'react';
-import { type Altitude, type Posture, RITUALS, sourceTierForGrain } from './lib/grains';
+import { type Altitude, type Grain, type Posture, RITUALS, sourceTierForGrain, sourceTiersForGrain } from './lib/grains';
 import {
   fetchFunnel, fetchSummary, fetchOverdue, fetchReview,
   type FunnelData, type SummaryData, type UiTask,
@@ -16,6 +16,7 @@ import { FocusView } from './components/FocusView';
 export function App() {
   const [altitude, setAltitude] = useState<Altitude>('day');
   const [aimedTier, setAimedTier] = useState<'month' | 'week' | 'day'>('day');
+  const [sourceSel, setSourceSel] = useState<Grain>(sourceTierForGrain('day'));
   const [overdueActive, setOverdueActive] = useState(false);
   const [posture, setPosture] = useState<Posture>('plan');
   const [mode, setMode] = useState<'plan' | 'focus'>('plan');
@@ -29,7 +30,7 @@ export function App() {
   const [conflicts, setConflicts] = useState<CommitResult['conflicts']>([]);
 
   const ritual = RITUALS[altitude][posture];
-  const sourceTier = sourceTierForGrain(altitude);
+  const sourceTier = sourceSel;
 
   useEffect(() => {
     void fetchFunnel().then(setFunnel);
@@ -63,7 +64,7 @@ export function App() {
         altitude={altitude}
         posture={posture}
         mode={mode}
-        onGrain={(a) => { setAltitude(a); setAimedTier(a); setOverdueActive(false); }}
+        onGrain={(a) => { setAltitude(a); setAimedTier(a); setSourceSel(sourceTierForGrain(a)); setOverdueActive(false); }}
         onPosture={setPosture}
         onMode={setMode}
       />
@@ -86,6 +87,8 @@ export function App() {
             <PlanBoard
               altitude={altitude}
               sourceTier={sourceTier}
+              sourceTabs={sourceTiersForGrain(altitude)}
+              onAimSource={(t) => { setSourceSel(t); setOverdueActive(false); }}
               aimed={aimedTier}
               onAim={setAimedTier}
               capacityMinutes={summary?.capacityMinutes ?? 480}

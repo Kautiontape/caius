@@ -24,6 +24,8 @@ import { CommitSummaryModal } from './CommitSummaryModal';
 interface Props {
   altitude: Altitude;
   sourceTier: Grain;
+  sourceTabs: Grain[];
+  onAimSource: (t: Grain) => void;
   aimed: 'month' | 'week' | 'day';
   onAim: (t: 'month' | 'week' | 'day') => void;
   capacityMinutes: number;
@@ -52,7 +54,7 @@ const COLLAPSED_KEY = 'caius-collapsed';
 const loadCollapsed = (): Record<string, boolean> => { try { const r = localStorage.getItem(COLLAPSED_KEY); if (r) return JSON.parse(r) as Record<string, boolean>; } catch { /* ignore */ } return {}; };
 const saveCollapsed = (m: Record<string, boolean>) => { try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(m)); } catch { /* ignore */ } };
 
-export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes, buffer, onStage, onUnstage, onCommit, conflicts, overdueActive }: Props) {
+export function PlanBoard({ altitude, sourceTier, sourceTabs, onAimSource, aimed, onAim, capacityMinutes, buffer, onStage, onUnstage, onCommit, conflicts, overdueActive }: Props) {
   const [source, setSource] = useState<UiTask[]>([]);
   const [members, setMembers] = useState<UiTask[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -144,6 +146,8 @@ export function PlanBoard({ altitude, sourceTier, aimed, onAim, capacityMinutes,
         <section data-testid="plan-board" className="grid grid-cols-[1.4fr_1fr] gap-5 px-5 pb-5 pt-3">
           <SourceColumn
             sourceTier={sourceTier}
+            sourceTabs={sourceTabs}
+            onAimSource={onAimSource}
             label={overdueActive ? '⚠ Overdue' : undefined}
             groups={sortedGroups}
             toolbar={<SourceToolbar filters={filters} onFilters={setFilters} sort={sort} onSort={setSort} projects={projects} selectMode={selectMode} onToggleSelectMode={() => { setSelectMode((m) => !m); clearSel(); }} />}
