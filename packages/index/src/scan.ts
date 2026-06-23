@@ -27,6 +27,7 @@ export interface IndexedTask {
   area: string | null; // deferred (D3) — always null in Phase 1
   parentRowid: number | null;
   tokens: { kind: string; raw: string }[];
+  notes: string[]; // attached non-task note lines (trimmed), in source order
   derivations: { axis: string; value: string | null; rule: string; source: string }[];
 }
 
@@ -131,6 +132,7 @@ export function scanVault(root: string, config: Config, now: Date = new Date()):
         area: null,
         parentRowid: null, // filled below
         tokens: pt.tokens.map((t) => ({ kind: t.kind, raw: t.raw })),
+        notes: pt.notes,
         derivations: [],
       });
       parses.push(pt);
