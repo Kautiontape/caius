@@ -1,4 +1,4 @@
-import { useContext, type ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
 import type { UiTask } from '../lib/api';
 import { ObsidianContext, obsidianHref } from '../lib/obsidian';
 import { displayPath } from '../lib/grouping';
@@ -12,6 +12,11 @@ interface Props {
   dragHandle?: ReactNode;
   onEdit?: () => void;
   onArchive?: () => void;
+  onPromote?: () => void;
+  onQuickEstimate?: (min: number) => void;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 function estLabel(min: number | null): string {
@@ -21,54 +26,61 @@ function estLabel(min: number | null): string {
   return `~${min}m`;
 }
 
-export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, onArchive }: Props) {
+const EST_CHIPS = [15, 30, 45, 60, 120];
+const chipLabel = (m: number) => (m % 60 === 0 ? `${m / 60}h` : `${m}m`);
+
+export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, onArchive, onPromote, onQuickEstimate, selectable, selected, onToggleSelect }: Props) {
   const obsidian = useContext(ObsidianContext);
+  const [estOpen, setEstOpen] = useState(false);
   return (
     <div
       data-testid="task-card"
       data-staged={staged ? 'true' : 'false'}
-      className={`rounded-lg border border-line bg-panel2 p-2.5 ${
-        task.inProgress ? 'border-l-2 border-l-good' : ''
-      } ${staged ? 'opacity-[0.42]' : ''}`}
+      className={`group rounded-lg border border-line bg-panel2 p-2.5 ${task.inProgress ? 'border-l-2 border-l-good' : ''} ${staged ? 'opacity-[0.42]' : ''} ${selected ? 'ring-1 ring-accent' : ''}`}
     >
       <div className="flex items-start gap-2">
+        {selectable && (
+          <input type="checkbox" data-testid="select-task" checked={!!selected} onChange={onToggleSelect} className="mt-0.5 accent-accent" />
+        )}
         {dragHandle}
         <div className={`flex-1 text-sm ${task.done ? 'line-through text-dim' : 'text-ink'}`}>
           {task.inProgress && <span className="mr-1 text-good">◷</span>}
           {task.text ? <InlineText text={task.text} /> : '(untitled)'}
         </div>
         {actions}
+        {onPromote && (
+          <button data-testid="promote-task" title="Promote" onClick={(e) => { e.stopPropagation(); onPromote(); }}
+            className="text-sm text-dim opacity-0 hover:text-good group-hover:opacity-100">→</button>
+        )}
         {onEdit && (
-          <button
-            data-testid="edit-open"
-            onClick={(e) => { e.stopPropagation(); onEdit(); }}
-            className="text-dim hover:text-accent text-sm"
-          >
-            ✎
-          </button>
+          <button data-testid="edit-open" onClick={(e) => { e.stopPropagation(); onEdit(); }} className="text-sm text-dim hover:text-accent">✎</button>
         )}
         {onArchive && (
-          <button
-            data-testid="archive-task"
-            title="Archive (won't do)"
-            onClick={(e) => { e.stopPropagation(); onArchive(); }}
-            className="text-dim hover:text-over text-sm"
-          >
-            🗑
-          </button>
+          <button data-testid="archive-task" title="Archive (won't do)" onClick={(e) => { e.stopPropagation(); onArchive(); }} className="text-sm text-dim hover:text-over">🗑</button>
         )}
       </div>
-      <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-dim">
+      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-dim">
         {task.project && <span className="text-accent">{task.project}</span>}
-        <span className={task.estMinutes == null ? 'text-warn' : ''}>{estLabel(task.estMinutes)}</span>
+        {onQuickEstimate ? (
+          <span className="relative">
+            <button data-testid="quick-est" onClick={(e) => { e.stopPropagation(); setEstOpen((o) => !o); }}
+              className={`underline decoration-dotted ${task.estMinutes == null ? 'text-warn' : ''}`}>{estLabel(task.estMinutes)} ▾</button>
+            {estOpen && (
+              <span className="absolute left-0 top-5 z-10 flex gap-1 rounded border border-line bg-panel p-1 shadow-lg">
+                {EST_CHIPS.map((m) => (
+                  <button key={m} data-testid={`est-chip-${m}`} onClick={(e) => { e.stopPropagation(); onQuickEstimate(m); setEstOpen(false); }}
+                    className="rounded px-1.5 py-0.5 text-ink hover:bg-panel2">{chipLabel(m)}</button>
+                ))}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className={task.estMinutes == null ? 'text-warn' : ''}>{estLabel(task.estMinutes)}</span>
+        )}
         {task.importance > 0 && <span>{'!'.repeat(task.importance)}</span>}
         {showFile && !task.project && (
-          <a
-            href={obsidianHref(obsidian.vault, task.file, task.line, obsidian.advancedUri)}
-            data-testid="file-chip"
-            className="rounded border border-line bg-panel px-1.5 text-[11px] text-dim hover:text-accent"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <a href={obsidianHref(obsidian.vault, task.file, task.line, obsidian.advancedUri)} data-testid="file-chip"
+            className="rounded border border-line bg-panel px-1.5 text-[11px] text-dim hover:text-accent" onClick={(e) => e.stopPropagation()}>
             {displayPath(task.file)}
           </a>
         )}
