@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useState } from 'react';
-import { type Altitude, type Posture, RITUALS } from './lib/grains';
+import { type Altitude, type Posture, RITUALS, sourceTierForGrain } from './lib/grains';
 import {
   fetchFunnel, fetchSummary, fetchOverdue, fetchReview,
   type FunnelData, type SummaryData, type UiTask,
@@ -15,6 +15,7 @@ import { FocusView } from './components/FocusView';
 
 export function App() {
   const [altitude, setAltitude] = useState<Altitude>('day');
+  const [aimedTier, setAimedTier] = useState<'month' | 'week' | 'day'>('day');
   const [posture, setPosture] = useState<Posture>('plan');
   const [mode, setMode] = useState<'plan' | 'focus'>('plan');
 
@@ -27,6 +28,7 @@ export function App() {
   const [conflicts, setConflicts] = useState<CommitResult['conflicts']>([]);
 
   const ritual = RITUALS[altitude][posture];
+  const sourceTier = sourceTierForGrain(altitude);
 
   useEffect(() => {
     void fetchFunnel().then(setFunnel);
@@ -60,15 +62,15 @@ export function App() {
         altitude={altitude}
         posture={posture}
         mode={mode}
-        onGrain={setAltitude}
+        onGrain={(a) => { setAltitude(a); setAimedTier(a); }}
         onPosture={setPosture}
         onMode={setMode}
       />
       <PipelineStrip
         byGrain={funnel?.byGrain ?? {}}
-        from={ritual.from}
-        to={ritual.to}
-        auditGrain={ritual.grain}
+        sourceTier={sourceTier}
+        aimed={aimedTier}
+        onAim={setAimedTier}
         overdueCount={overdue.length}
         nowCount={funnel?.now.length ?? 0}
       />
@@ -79,6 +81,9 @@ export function App() {
           {posture === 'plan' && (
             <PlanBoard
               altitude={altitude}
+              sourceTier={sourceTier}
+              aimed={aimedTier}
+              onAim={setAimedTier}
               capacityMinutes={summary?.capacityMinutes ?? 480}
               buffer={buffer}
               onStage={onStage}
