@@ -7,9 +7,24 @@ export type SourceGroup = {
   tasks: UiTask[];
 };
 
+/** Strip a leading Obsidian Zettelkasten timestamp id ("20240816123018 - ") from a
+ * display name. Matches 12–14 leading digits followed by " - ". */
+export function stripZettelPrefix(name: string): string {
+  return name.replace(/^\d{12,14} - /, '');
+}
+
 export function documentTitle(file: string): string {
   const base = file.split('/').pop() ?? file;
-  return base.replace(/\.md$/i, '');
+  return stripZettelPrefix(base.replace(/\.md$/i, ''));
+}
+
+/** A file path cleaned for display: keep the folder path, strip the timestamp
+ * prefix and the .md extension from the basename. The raw path is still used for
+ * the Obsidian deep-link. */
+export function displayPath(file: string): string {
+  const parts = file.split('/');
+  const base = stripZettelPrefix((parts.pop() ?? file).replace(/\.md$/i, ''));
+  return [...parts, base].join('/');
 }
 
 export function groupSource(tasks: UiTask[]): SourceGroup[] {

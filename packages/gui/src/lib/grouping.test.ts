@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { documentTitle, groupSource } from './grouping';
+import { documentTitle, groupSource, stripZettelPrefix, displayPath } from './grouping';
 import type { UiTask } from './api';
 
 const t = (over: Partial<UiTask>): UiTask => ({
@@ -39,5 +39,25 @@ describe('groupSource', () => {
     expect(docGroups).toHaveLength(2);
     expect(docGroups[0].tasks).toHaveLength(1);
     expect(docGroups[1].tasks).toHaveLength(1);
+  });
+});
+
+describe('stripZettelPrefix / displayPath', () => {
+  it('strips a 12–14 digit timestamp id prefix', () => {
+    expect(stripZettelPrefix('20240816123018 - Questions for AWS Team')).toBe('Questions for AWS Team');
+  });
+
+  it('leaves names without a timestamp prefix untouched', () => {
+    expect(stripZettelPrefix('Project Priorities')).toBe('Project Priorities');
+  });
+
+  it('documentTitle drops folder, extension, and timestamp prefix', () => {
+    expect(documentTitle('10 - Project/Foo/20240816123018 - Questions for AWS Team.md'))
+      .toBe('Questions for AWS Team');
+  });
+
+  it('displayPath keeps the folder but cleans the basename', () => {
+    expect(displayPath('10 - Project/Foo/20240816123018 - Questions for AWS Team.md'))
+      .toBe('10 - Project/Foo/Questions for AWS Team');
   });
 });

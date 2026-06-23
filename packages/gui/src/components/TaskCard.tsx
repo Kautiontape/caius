@@ -1,6 +1,7 @@
 import { useContext, type ReactNode } from 'react';
 import type { UiTask } from '../lib/api';
 import { ObsidianContext, obsidianHref } from '../lib/obsidian';
+import { displayPath } from '../lib/grouping';
 import { InlineText } from './InlineText';
 
 interface Props {
@@ -68,7 +69,7 @@ export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, 
             className="rounded border border-line bg-panel px-1.5 text-[11px] text-dim hover:text-accent"
             onClick={(e) => e.stopPropagation()}
           >
-            {task.file}
+            {displayPath(task.file)}
           </a>
         )}
       </div>
