@@ -19,7 +19,7 @@ export function SelectionBar({ count, onPromote, onEstimate, onArchive, onClear 
       <button data-testid="bulk-promote" onClick={onPromote} className="rounded-lg bg-accent px-3 py-1 text-bg">→ Promote</button>
       <span className="flex items-center gap-1 text-xs text-dim">est:
         {EST_CHIPS.map((m) => (
-          <button key={m} data-testid={`bulk-est-${m}`} onClick={() => onEstimate(m)} className="rounded border border-line px-1.5 py-0.5 text-ink hover:border-accent">{estLabel(m)}</button>
+          <button key={m} data-testid={`bulk-est-${m}`} onClick={() => onEstimate(m)} className="rounded-sm border border-line px-1.5 py-0.5 text-ink hover:border-accent">{estLabel(m)}</button>
         ))}
       </span>
       <button data-testid="bulk-archive" onClick={onArchive} className="rounded-lg border border-line px-3 py-1 text-dim hover:text-over">Archive</button>

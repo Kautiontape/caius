@@ -55,7 +55,7 @@ export function SourceColumn({ sourceTier, sourceTabs, onAimSource, label, overd
 
   return (
     <div ref={setDropRef} data-testid="source"
-      className={`flex max-h-[calc(100vh-170px)] flex-col rounded-lg border bg-panel p-3 shadow-sm transition-all ${isOver ? 'border-accent ring-2 ring-accent/50' : overdue ? 'border-over ring-1 ring-over/40' : 'border-line'}`}>
+      className={`flex max-h-[calc(100vh-170px)] flex-col rounded-lg border bg-panel p-3 shadow-xs transition-all ${isOver ? 'border-accent ring-2 ring-accent/50' : overdue ? 'border-over ring-1 ring-over/40' : 'border-line'}`}>
       <div className="mb-2 flex items-center justify-between">
         {label ? (
           <span className={`text-xs uppercase tracking-wide ${overdue ? 'font-bold text-over' : 'text-dim'}`}>{label}</span>

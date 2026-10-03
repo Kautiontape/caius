@@ -60,7 +60,7 @@ export function FocusView() {
                   data-testid="focus-complete"
                   onClick={() => void act(t, { state: 'done' })}
                   disabled={writing}
-                  className="rounded bg-panel2 px-2 py-0.5 text-good disabled:opacity-40"
+                  className="rounded-sm bg-panel2 px-2 py-0.5 text-good disabled:opacity-40"
                 >
                   done
                 </button>
@@ -68,7 +68,7 @@ export function FocusView() {
                   data-testid="focus-toggle"
                   onClick={() => void act(t, { state: t.state === 'in_progress' ? 'open' : 'in_progress' })}
                   disabled={writing}
-                  className="rounded bg-panel2 px-2 py-0.5 text-accent disabled:opacity-40"
+                  className="rounded-sm bg-panel2 px-2 py-0.5 text-accent disabled:opacity-40"
                 >
                   {t.state === 'in_progress' ? 'stop' : 'start'}
                 </button>
@@ -76,7 +76,7 @@ export function FocusView() {
                   data-testid="focus-archive"
                   onClick={() => void act(t, { state: 'cancelled' })}
                   disabled={writing}
-                  className="rounded bg-panel2 px-2 py-0.5 text-over disabled:opacity-40"
+                  className="rounded-sm bg-panel2 px-2 py-0.5 text-over disabled:opacity-40"
                 >
                   archive
                 </button>

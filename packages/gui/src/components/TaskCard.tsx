@@ -69,7 +69,7 @@ export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, 
               className={`underline decoration-dotted ${task.estMinutes == null ? 'text-warn' : ''}`}>{estLabel(task.estMinutes)} ▾</button>
             {estOpen && EST_CHIPS.map((m) => (
               <button key={m} data-testid={`est-chip-${m}`} onClick={(e) => { e.stopPropagation(); onQuickEstimate(m); setEstOpen(false); }}
-                className="rounded border border-line px-1.5 py-0.5 text-ink hover:border-accent">{chipLabel(m)}</button>
+                className="rounded-sm border border-line px-1.5 py-0.5 text-ink hover:border-accent">{chipLabel(m)}</button>
             ))}
           </span>
         ) : (
@@ -84,12 +84,12 @@ export function TaskCard({ task, staged, actions, showFile, dragHandle, onEdit, 
             defaultValue={task.due ?? ''}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => { if (e.target.value) onReschedule(e.target.value); }}
-            className="rounded border border-line bg-panel px-1 text-[11px] text-ink"
+            className="rounded-sm border border-line bg-panel px-1 text-[11px] text-ink"
           />
         )}
         {showFile && !task.project && (
           <a href={obsidianHref(obsidian.vault, task.file, task.line, obsidian.advancedUri)} data-testid="file-chip"
-            className="rounded border border-line bg-panel px-1.5 text-[11px] text-dim hover:text-accent" onClick={(e) => e.stopPropagation()}>
+            className="rounded-sm border border-line bg-panel px-1.5 text-[11px] text-dim hover:text-accent" onClick={(e) => e.stopPropagation()}>
             {displayPath(task.file)}
           </a>
         )}

@@ -21,7 +21,7 @@ export function CommitSummaryModal({
         </h2>
         <div className="mb-3 flex flex-wrap gap-2 text-xs">
           {summary.byTier.map((b) => (
-            <span key={b.tier} className="rounded border border-line bg-panel2 px-2 py-1 text-dim">
+            <span key={b.tier} className="rounded-sm border border-line bg-panel2 px-2 py-1 text-dim">
               {b.count} → <span className="text-ink">{b.tier}</span>
             </span>
           ))}

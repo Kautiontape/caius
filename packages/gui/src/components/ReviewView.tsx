@@ -58,9 +58,9 @@ export function ReviewView({ altitude, done, open, pending, onStage, onUnstage, 
                     <button data-testid="review-unstage" onClick={() => onUnstage(t.id)} className="text-dim hover:text-over text-sm">undo</button>
                   ) : (
                     <div className="flex gap-1 text-xs">
-                      <button data-testid="review-defer" onClick={() => defer(t)} className="rounded bg-panel2 px-2 py-0.5 text-accent">defer → {nextLabel}</button>
-                      {back && <button data-testid="review-rollback" onClick={() => rollback(t)} className="rounded bg-panel2 px-2 py-0.5 text-dim">↑ {GRAIN_LABEL[back]}</button>}
-                      <button data-testid="review-drop" onClick={() => drop(t)} className="rounded bg-panel2 px-2 py-0.5 text-over">drop</button>
+                      <button data-testid="review-defer" onClick={() => defer(t)} className="rounded-sm bg-panel2 px-2 py-0.5 text-accent">defer → {nextLabel}</button>
+                      {back && <button data-testid="review-rollback" onClick={() => rollback(t)} className="rounded-sm bg-panel2 px-2 py-0.5 text-dim">↑ {GRAIN_LABEL[back]}</button>}
+                      <button data-testid="review-drop" onClick={() => drop(t)} className="rounded-sm bg-panel2 px-2 py-0.5 text-over">drop</button>
                     </div>
                   )
                 }

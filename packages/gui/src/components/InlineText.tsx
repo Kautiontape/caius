@@ -24,7 +24,7 @@ export function InlineText({ text }: { text: string }) {
           );
         }
         if (s.kind === 'bold') return <strong key={i}>{s.text}</strong>;
-        if (s.kind === 'code') return <code key={i} className="rounded bg-panel px-1 text-[0.92em]">{s.text}</code>;
+        if (s.kind === 'code') return <code key={i} className="rounded-sm bg-panel px-1 text-[0.92em]">{s.text}</code>;
         return <Fragment key={i}>{s.text}</Fragment>;
       })}
     </>
