@@ -25,7 +25,7 @@ export function PipelineStrip({ byGrain, altitude, sourceTier, aimed, onAim, ove
             <span key={g} className="flex items-center gap-2">
               {i > 0 && <span className="text-dim">→</span>}
               <button data-testid={`pipe-${g}`} disabled={!aimable} onClick={() => aimable && onAim(g)}
-                className={`rounded px-2 py-1 ${lit(g) ? 'bg-panel2 text-ink' : 'text-dim'} ${aimable ? 'hover:text-ink' : 'cursor-default'}`}>
+                className={`rounded-sm px-2 py-1 ${lit(g) ? 'bg-panel2 text-ink' : 'text-dim'} ${aimable ? 'hover:text-ink' : 'cursor-default'}`}>
                 {GRAIN_LABEL[g]} <b className="text-ink">{byGrain[g] ?? 0}</b>
               </button>
             </span>
@@ -34,7 +34,7 @@ export function PipelineStrip({ byGrain, altitude, sourceTier, aimed, onAim, ove
         <span className="ml-auto flex gap-3">
           <span className="text-good" data-testid="now-count">now {nowCount}</span>
           <button data-testid="overdue-count" onClick={onAimOverdue}
-            className={`rounded px-2 py-1 ${overdueActive ? 'bg-over text-bg' : altitude === 'day' ? 'text-over ring-1 ring-over/50' : 'text-over'}`}>
+            className={`rounded-sm px-2 py-1 ${overdueActive ? 'bg-over text-bg' : altitude === 'day' ? 'text-over ring-1 ring-over/50' : 'text-over'}`}>
             ⚠ overdue {overdueCount}
           </button>
         </span>

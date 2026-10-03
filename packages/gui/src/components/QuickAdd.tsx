@@ -46,21 +46,21 @@ export function QuickAdd({ onCaptured }: { onCaptured: () => void }) {
       />
       {preview && hasTokens && (
         <div data-testid="capture-preview" className="flex flex-wrap items-center gap-1.5 px-1 text-[11px]">
-          <span className="rounded border border-line bg-panel2 px-1.5 py-0.5 text-ink">{preview.title || '(no title yet)'}</span>
+          <span className="rounded-sm border border-line bg-panel2 px-1.5 py-0.5 text-ink">{preview.title || '(no title yet)'}</span>
           {preview.estMinutes != null && (
-            <span className="rounded border border-line px-1.5 py-0.5 text-good">~{preview.estMinutes}m</span>
+            <span className="rounded-sm border border-line px-1.5 py-0.5 text-good">~{preview.estMinutes}m</span>
           )}
           {preview.importance > 0 && (
-            <span className="rounded border border-line px-1.5 py-0.5 text-warn">{'!'.repeat(preview.importance)}</span>
+            <span className="rounded-sm border border-line px-1.5 py-0.5 text-warn">{'!'.repeat(preview.importance)}</span>
           )}
           {preview.due && (
-            <span className="rounded border border-line px-1.5 py-0.5 text-accent">due {preview.due}</span>
+            <span className="rounded-sm border border-line px-1.5 py-0.5 text-accent">due {preview.due}</span>
           )}
           {preview.project && (
-            <span className="rounded border border-line px-1.5 py-0.5 text-accent">{preview.project}</span>
+            <span className="rounded-sm border border-line px-1.5 py-0.5 text-accent">{preview.project}</span>
           )}
           {preview.unparsed.map((u) => (
-            <span key={u} data-testid="capture-unparsed" className="rounded border border-over/50 px-1.5 py-0.5 text-over">
+            <span key={u} data-testid="capture-unparsed" className="rounded-sm border border-over/50 px-1.5 py-0.5 text-over">
               "{u}" isn't a valid token — it'll stay in the title
             </span>
           ))}

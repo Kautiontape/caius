@@ -178,7 +178,7 @@ export function PlanBoard({ altitude, sourceTier, sourceTabs, onAimSource, aimed
               {cards.length ? cards : <div className="text-xs italic text-dim">empty</div>}
             </DestinationColumn>
             {conflicts.length > 0 && (
-              <div className="rounded border border-over/40 p-2 text-xs text-over" data-testid="board-conflicts">{conflicts.length} conflict(s) kept staged.</div>
+              <div className="rounded-sm border border-over/40 p-2 text-xs text-over" data-testid="board-conflicts">{conflicts.length} conflict(s) kept staged.</div>
             )}
             <button data-testid="commit-button" disabled={Object.keys(buffer).length === 0 || committing}
               onClick={() => setConfirmSummary(summarizeBuffer(buffer))}

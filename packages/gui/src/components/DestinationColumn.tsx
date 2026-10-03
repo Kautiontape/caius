@@ -22,7 +22,7 @@ interface Props {
 export function DestinationColumn({ aimed, tabs, isDefault, onAim, meter, count, dragging, children }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `bucket:${aimed}` });
   return (
-    <div className="flex flex-col rounded-lg border border-line bg-panel p-3 shadow-sm">
+    <div className="flex flex-col rounded-lg border border-line bg-panel p-3 shadow-xs">
       <div className="mb-2 flex items-center gap-2">
         <div className="flex rounded-full bg-panel2 p-0.5 text-xs" data-testid="dest-tabs">
           {tabs.map((t) => <TabDrop key={t} tier={t} active={t === aimed} onAim={onAim} />)}
@@ -31,9 +31,9 @@ export function DestinationColumn({ aimed, tabs, isDefault, onAim, meter, count,
       </div>
       <CapacityMeter meter={meter} />
       <div ref={setNodeRef} data-testid={`bucket:${aimed}`}
-        className={`mt-2 flex min-h-24 flex-1 flex-col gap-1.5 overflow-auto rounded border border-dashed p-2 transition-all ${isOver ? 'border-accent bg-accent/10' : dragging ? 'border-line' : 'border-transparent'}`}>
+        className={`mt-2 flex min-h-24 flex-1 flex-col gap-1.5 overflow-auto rounded-sm border border-dashed p-2 transition-all ${isOver ? 'border-accent bg-accent/10' : dragging ? 'border-line' : 'border-transparent'}`}>
         {children}
-        {dragging && <div className="rounded border border-dashed border-accent/60 p-2 text-center text-xs text-accent">drop to promote</div>}
+        {dragging && <div className="rounded-sm border border-dashed border-accent/60 p-2 text-center text-xs text-accent">drop to promote</div>}
       </div>
     </div>
   );
